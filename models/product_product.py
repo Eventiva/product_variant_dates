@@ -33,7 +33,7 @@ class ProductProduct(models.Model):
         help='Human readable information about the sale period'
     )
 
-    @api.depends('product_template_attribute_value_ids.sale_start_date', 'product_template_attribute_value_ids.sale_end_date')
+    @api.depends('product_template_attribute_value_ids.product_attribute_value_id.sale_start_date', 'product_template_attribute_value_ids.product_attribute_value_id.sale_end_date')
     def _compute_sale_dates_from_attributes(self):
         """Compute sale dates from the most restrictive attribute value dates."""
         for variant in self:
@@ -45,9 +45,16 @@ class ProductProduct(models.Model):
                 variant.sale_end_date = False
                 continue
 
-            # Find the most restrictive dates
-            start_dates = attr_values.filtered('sale_start_date').mapped('sale_start_date')
-            end_dates = attr_values.filtered('sale_end_date').mapped('sale_end_date')
+            # Get dates from the underlying product.attribute.value records
+            start_dates = []
+            end_dates = []
+
+            for ptav in attr_values:
+                if ptav.product_attribute_value_id:
+                    if ptav.product_attribute_value_id.sale_start_date:
+                        start_dates.append(ptav.product_attribute_value_id.sale_start_date)
+                    if ptav.product_attribute_value_id.sale_end_date:
+                        end_dates.append(ptav.product_attribute_value_id.sale_end_date)
 
             # Use the latest start date (most restrictive)
             variant.sale_start_date = max(start_dates) if start_dates else False
