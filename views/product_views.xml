@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Product Attribute Value Form View -->
+    <!-- Product Attribute Value Form View - Extend the inline form within attribute form -->
     <record id="product_attribute_value_form_view_inherit" model="ir.ui.view">
         <field name="name">product.attribute.value.form.inherit.sale.dates</field>
         <field name="model">product.attribute.value</field>
-        <field name="inherit_id" ref="product.product_attribute_value_form_view"/>
+        <field name="inherit_id" ref="product.product_attribute_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='name']" position="after">
+            <xpath expr="//field[@name='value_ids']//list//field[@name='name']" position="after">
                 <field name="sale_start_date" optional="hide"/>
                 <field name="sale_end_date" optional="hide"/>
                 <field name="is_sale_period_active" optional="hide"/>
-                <field name="sale_period_info" optional="hide"/>
             </xpath>
         </field>
     </record>
@@ -19,7 +18,7 @@
     <record id="product_attribute_value_tree_view_inherit" model="ir.ui.view">
         <field name="name">product.attribute.value.tree.inherit.sale.dates</field>
         <field name="model">product.attribute.value</field>
-        <field name="inherit_id" ref="product.product_attribute_value_tree_view"/>
+        <field name="inherit_id" ref="product.product_attribute_value_list"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
                 <field name="sale_start_date" optional="hide"/>
@@ -77,7 +76,7 @@
     <record id="product_attribute_value_search_view_inherit" model="ir.ui.view">
         <field name="name">product.attribute.value.search.inherit.sale.dates</field>
         <field name="model">product.attribute.value</field>
-        <field name="inherit_id" ref="product.product_attribute_value_search_view"/>
+        <field name="inherit_id" ref="product.product_attribute_search"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
                 <field name="sale_start_date"/>
