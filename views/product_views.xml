@@ -3,7 +3,7 @@
     <!-- Product Attribute Value Form View - Extend the inline form within attribute form -->
     <record id="product_attribute_value_form_view_inherit" model="ir.ui.view">
         <field name="name">product.attribute.value.form.inherit.sale.dates</field>
-        <field name="model">product.attribute.value</field>
+        <field name="model">product.attribute</field>
         <field name="inherit_id" ref="product.product_attribute_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='value_ids']//list//field[@name='name']" position="after">
