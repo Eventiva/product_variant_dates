@@ -34,7 +34,7 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//group[@name='codes']" position="inside">
+            <xpath expr="//field[@name='categ_id']" position="after">
                 <field name="sale_start_date" optional="hide" readonly="1"/>
                 <field name="sale_end_date" optional="hide" readonly="1"/>
                 <field name="is_sale_period_active" optional="hide" readonly="1"/>
