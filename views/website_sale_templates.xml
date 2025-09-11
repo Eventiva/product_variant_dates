@@ -39,12 +39,6 @@
         </xpath>
     </template>
 
-    <!-- Variants Template - Hide Expired Variants -->
-    <template id="variants_hide_expired" inherit_id="website_sale.variants" name="Hide Expired Variants">
-        <xpath expr="//li[@t-foreach='ptavs']" position="attributes">
-            <attribute name="t-attf-class">list-inline-item mb-3 js_attribute_value #{'d-none' if not ptav.is_sale_period_active else ''}"</attribute>
-        </xpath>
-    </template>
 
     <!-- Product List - Show Sale Period Info -->
     <template id="products_item_sale_period_info" inherit_id="website_sale.products_item" name="Products Item Sale Period Info">
@@ -58,10 +52,4 @@
         </xpath>
     </template>
 
-    <!-- Product List - Hide Expired Products -->
-    <template id="products_item_hide_expired" inherit_id="website_sale.products_item" name="Products Item Hide Expired">
-        <xpath expr="//form[@action='/shop/cart/update']" position="attributes">
-            <attribute name="t-attf-class">oe_product_cart h-100 d-flex #{'d-none' if not product.is_sale_period_active else ''}</attribute>
-        </xpath>
-    </template>
 </odoo>

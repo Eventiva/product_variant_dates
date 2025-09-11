@@ -35,7 +35,7 @@ class ProductProduct(models.Model):
 
     @api.depends('product_template_attribute_value_ids.product_attribute_value_id.sale_start_date', 'product_template_attribute_value_ids.product_attribute_value_id.sale_end_date')
     def _compute_sale_dates_from_attributes(self):
-        """Compute sale dates from the most restrictive attribute value dates."""
+        """Compute sale dates from attribute value dates."""
         for variant in self:
             # Get all attribute values for this variant
             attr_values = variant.product_template_attribute_value_ids
@@ -56,11 +56,9 @@ class ProductProduct(models.Model):
                     if ptav.product_attribute_value_id.sale_end_date:
                         end_dates.append(ptav.product_attribute_value_id.sale_end_date)
 
-            # Use the latest start date (most restrictive)
-            variant.sale_start_date = max(start_dates) if start_dates else False
-
-            # Use the earliest end date (most restrictive)
-            variant.sale_end_date = min(end_dates) if end_dates else False
+            # Use the earliest start date and latest end date (least restrictive for variant)
+            variant.sale_start_date = min(start_dates) if start_dates else False
+            variant.sale_end_date = max(end_dates) if end_dates else False
 
     @api.depends('sale_start_date', 'sale_end_date')
     def _compute_is_sale_period_active(self):
@@ -78,12 +76,21 @@ class ProductProduct(models.Model):
     def _compute_sale_period_info(self):
         """Compute human readable sale period information."""
         for variant in self:
-            info_parts = []
-            if variant.sale_start_date:
-                info_parts.append(_('Available from %s') % variant.sale_start_date.strftime('%Y-%m-%d'))
             if variant.sale_end_date:
-                info_parts.append(_('Until %s') % variant.sale_end_date.strftime('%Y-%m-%d'))
-            variant.sale_period_info = ' | '.join(info_parts) if info_parts else ''
+                # Format date as "1st Jul" style
+                day = variant.sale_end_date.day
+                month = variant.sale_end_date.strftime('%b')
+                if day in (1, 21, 31):
+                    suffix = 'st'
+                elif day in (2, 22):
+                    suffix = 'nd'
+                elif day in (3, 23):
+                    suffix = 'rd'
+                else:
+                    suffix = 'th'
+                variant.sale_period_info = _('Until %d%s %s') % (day, suffix, month)
+            else:
+                variant.sale_period_info = ''
 
     def _is_add_to_cart_possible(self):
         """Override to check if variant is within sale period."""

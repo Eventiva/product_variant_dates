@@ -44,12 +44,21 @@ class ProductAttributeValue(models.Model):
     def _compute_sale_period_info(self):
         """Compute human readable sale period information."""
         for attr_value in self:
-            info_parts = []
-            if attr_value.sale_start_date:
-                info_parts.append(_('Available from %s') % attr_value.sale_start_date.strftime('%Y-%m-%d'))
             if attr_value.sale_end_date:
-                info_parts.append(_('Until %s') % attr_value.sale_end_date.strftime('%Y-%m-%d'))
-            attr_value.sale_period_info = ' | '.join(info_parts) if info_parts else ''
+                # Format date as "1st Jul" style
+                day = attr_value.sale_end_date.day
+                month = attr_value.sale_end_date.strftime('%b')
+                if day in (1, 21, 31):
+                    suffix = 'st'
+                elif day in (2, 22):
+                    suffix = 'nd'
+                elif day in (3, 23):
+                    suffix = 'rd'
+                else:
+                    suffix = 'th'
+                attr_value.sale_period_info = _('Until %d%s %s') % (day, suffix, month)
+            else:
+                attr_value.sale_period_info = ''
 
     @api.constrains('sale_start_date', 'sale_end_date')
     def _check_sale_dates(self):

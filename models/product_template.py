@@ -37,18 +37,19 @@ class ProductTemplate(models.Model):
     def _compute_sale_dates_from_variants(self):
         """Compute sale dates from variant attribute values."""
         for template in self:
-            variants = template.product_variant_ids.filtered('is_sale_period_active')
+            # Get all variants with sale dates, not just active ones
+            variants = template.product_variant_ids
 
             if not variants:
                 template.sale_start_date = False
                 template.sale_end_date = False
                 continue
 
-            # Get dates from variants
+            # Get dates from all variants (including inactive ones)
             start_dates = [v.sale_start_date for v in variants if v.sale_start_date]
             end_dates = [v.sale_end_date for v in variants if v.sale_end_date]
 
-            # Use the earliest start date and latest end date (least restrictive for template)
+            # Use the earliest start date and latest end date from ALL variants
             template.sale_start_date = min(start_dates) if start_dates else False
             template.sale_end_date = max(end_dates) if end_dates else False
 
@@ -64,16 +65,29 @@ class ProductTemplate(models.Model):
             else:
                 template.is_sale_period_active = True
 
+            # Unpublish product if sale period is not active
+            if not template.is_sale_period_active and template.website_published:
+                template.website_published = False
+
     @api.depends('sale_start_date', 'sale_end_date')
     def _compute_sale_period_info(self):
         """Compute human readable sale period information."""
         for template in self:
-            info_parts = []
-            if template.sale_start_date:
-                info_parts.append(_('Available from %s') % template.sale_start_date.strftime('%Y-%m-%d'))
             if template.sale_end_date:
-                info_parts.append(_('Until %s') % template.sale_end_date.strftime('%Y-%m-%d'))
-            template.sale_period_info = ' | '.join(info_parts) if info_parts else ''
+                # Format date as "1st Jul" style
+                day = template.sale_end_date.day
+                month = template.sale_end_date.strftime('%b')
+                if day in (1, 21, 31):
+                    suffix = 'st'
+                elif day in (2, 22):
+                    suffix = 'nd'
+                elif day in (3, 23):
+                    suffix = 'rd'
+                else:
+                    suffix = 'th'
+                template.sale_period_info = _('Until %d%s %s') % (day, suffix, month)
+            else:
+                template.sale_period_info = ''
 
     def _get_possible_variants_sorted(self):
         """Override to filter out variants that are not within their sale period."""
