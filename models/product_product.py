@@ -34,14 +34,13 @@ class ProductProduct(models.Model):
     )
 
     # Override the variant_ribbon_id to be computed based on sale period
-    # Temporarily commented out to debug template issue
-    # variant_ribbon_id = fields.Many2one(
-    #     string="Variant Ribbon",
-    #     comodel_name='product.ribbon',
-    #     compute='_compute_variant_ribbon_id',
-    #     store=True,
-    #     help='Ribbon displayed on the website based on variant sale period'
-    # )
+    variant_ribbon_id = fields.Many2one(
+        string="Variant Ribbon",
+        comodel_name='product.ribbon',
+        compute='_compute_variant_ribbon_id',
+        store=True,
+        help='Ribbon displayed on the website based on variant sale period'
+    )
 
     @api.depends('product_template_attribute_value_ids.product_attribute_value_id.sale_start_date', 'product_template_attribute_value_ids.product_attribute_value_id.sale_end_date')
     def _compute_sale_dates_from_attributes(self):
@@ -119,37 +118,35 @@ class ProductProduct(models.Model):
             else:
                 variant.sale_period_info = ''
 
-    # Temporarily commented out to debug template issue
-    # @api.depends('sale_end_date', 'is_sale_period_active')
-    # def _compute_variant_ribbon_id(self):
-    #     """Compute ribbon based on variant sale period."""
-    #     for variant in self:
-    #         if variant.sale_end_date and variant.is_sale_period_active:
-    #             # Create or get a ribbon for the sale period
-    #             ribbon = variant.env['product.ribbon'].search([
-    #                 ('name', '=', variant.sale_period_info)
-    #             ], limit=1)
+    @api.depends('sale_end_date', 'is_sale_period_active')
+    def _compute_variant_ribbon_id(self):
+        """Compute ribbon based on variant sale period."""
+        for variant in self:
+            if variant.sale_end_date and variant.is_sale_period_active:
+                # Create or get a ribbon for the sale period
+                ribbon = variant.env['product.ribbon'].search([
+                    ('name', '=', variant.sale_period_info)
+                ], limit=1)
 
-    #             if not ribbon:
-    #                 # Create a new ribbon for this sale period
-    #                 ribbon = variant.env['product.ribbon'].create({
-    #                     'name': variant.sale_period_info,
-    #                     'bg_color': '#17a2b8',  # Bootstrap info color
-    #                     'text_color': '#ffffff',
-    #                     'position': 'right'
-    #                 })
+                if not ribbon:
+                    # Create a new ribbon for this sale period
+                    ribbon = variant.env['product.ribbon'].create({
+                        'name': variant.sale_period_info,
+                        'bg_color': '#17a2b8',  # Bootstrap info color
+                        'text_color': '#ffffff',
+                        'position': 'right'
+                    })
 
-    #             variant.variant_ribbon_id = ribbon
-    #         else:
-    #             variant.variant_ribbon_id = False
+                variant.variant_ribbon_id = ribbon
+            else:
+                variant.variant_ribbon_id = False
 
 
-    # Temporarily commented out to debug template issue
-    # def _get_combination_info_variant(self):
-    #     """Override to include sale period information."""
-    #     info = super()._get_combination_info_variant()
-    #     # Only include sale period info for active variants
-    #     if self.active:
-    #         info['is_sale_period_active'] = self.is_sale_period_active
-    #         info['sale_period_info'] = self.sale_period_info
-    #     return info
+    def _get_combination_info_variant(self):
+        """Override to include sale period information."""
+        info = super()._get_combination_info_variant()
+        # Only include sale period info for active variants
+        if self.active:
+            info['is_sale_period_active'] = self.is_sale_period_active
+            info['sale_period_info'] = self.sale_period_info
+        return info

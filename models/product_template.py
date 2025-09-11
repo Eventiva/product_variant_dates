@@ -36,15 +36,14 @@ class ProductTemplate(models.Model):
         help='Human readable information about the sale period'
     )
 
-    # Temporarily commented out to debug template issue
-    # # Override the website_ribbon_id to be computed based on sale period
-    # website_ribbon_id = fields.Many2one(
-    #     string="Ribbon",
-    #     comodel_name='product.ribbon',
-    #     compute='_compute_website_ribbon_id',
-    #     store=True,
-    #     help='Ribbon displayed on the website based on sale period'
-    # )
+    # Override the website_ribbon_id to be computed based on sale period
+    website_ribbon_id = fields.Many2one(
+        string="Ribbon",
+        comodel_name='product.ribbon',
+        compute='_compute_website_ribbon_id',
+        store=True,
+        help='Ribbon displayed on the website based on sale period'
+    )
 
     @api.depends('product_variant_ids.sale_start_date', 'product_variant_ids.sale_end_date')
     def _compute_sale_dates_from_variants(self):
@@ -102,73 +101,70 @@ class ProductTemplate(models.Model):
             else:
                 template.sale_period_info = ''
 
-    # Temporarily commented out to debug template issue
-    # @api.depends('sale_end_date', 'is_sale_period_active')
-    # def _compute_website_ribbon_id(self):
-    #     """Compute ribbon based on sale period."""
-    #     for template in self:
-    #         if template.sale_end_date and template.is_sale_period_active:
-    #             # Create or get a ribbon for the sale period
-    #             ribbon = template.env['product.ribbon'].search([
-    #                 ('name', '=', template.sale_period_info)
-    #             ], limit=1)
+    @api.depends('sale_end_date', 'is_sale_period_active')
+    def _compute_website_ribbon_id(self):
+        """Compute ribbon based on sale period."""
+        for template in self:
+            if template.sale_end_date and template.is_sale_period_active:
+                # Create or get a ribbon for the sale period
+                ribbon = template.env['product.ribbon'].search([
+                    ('name', '=', template.sale_period_info)
+                ], limit=1)
 
-    #             if not ribbon:
-    #                 # Create a new ribbon for this sale period
-    #                 ribbon = template.env['product.ribbon'].create({
-    #                     'name': template.sale_period_info,
-    #                     'bg_color': '#17a2b8',  # Bootstrap info color
-    #                     'text_color': '#ffffff',
-    #                     'position': 'right'
-    #                 })
+                if not ribbon:
+                    # Create a new ribbon for this sale period
+                    ribbon = template.env['product.ribbon'].create({
+                        'name': template.sale_period_info,
+                        'bg_color': '#17a2b8',  # Bootstrap info color
+                        'text_color': '#ffffff',
+                        'position': 'right'
+                    })
 
-    #             template.website_ribbon_id = ribbon
-    #         else:
-    #             template.website_ribbon_id = False
+                template.website_ribbon_id = ribbon
+            else:
+                template.website_ribbon_id = False
 
 
-    # Temporarily commented out to debug template issue
-    # def _get_combination_info(self, combination=False, product_id=False, add_qty=1.0, parent_combination=False, only_template=False):
-    #     """Override to include sale period information in combination info."""
-    #     info = super()._get_combination_info(
-    #         combination=combination,
-    #         product_id=product_id,
-    #         add_qty=add_qty,
-    #         parent_combination=parent_combination,
-    #         only_template=only_template
-    #     )
+    def _get_combination_info(self, combination=False, product_id=False, add_qty=1.0, parent_combination=False, only_template=False):
+        """Override to include sale period information in combination info."""
+        info = super()._get_combination_info(
+            combination=combination,
+            product_id=product_id,
+            add_qty=add_qty,
+            parent_combination=parent_combination,
+            only_template=only_template
+        )
 
-    #     if not only_template and product_id:
-    #         variant = self.env['product.product'].browse(product_id)
-    #         # Only include sale period info for active variants
-    #         if variant.active:
-    #             info['is_sale_period_active'] = variant.is_sale_period_active
-    #             info['sale_period_info'] = variant.sale_period_info
+        if not only_template and product_id:
+            variant = self.env['product.product'].browse(product_id)
+            # Only include sale period info for active variants
+            if variant.active:
+                info['is_sale_period_active'] = variant.is_sale_period_active
+                info['sale_period_info'] = variant.sale_period_info
 
-    #     return info
+        return info
 
-    # Temporarily commented out to debug template issue
-    # @api.model
-    # def _cron_archive_inactive_variants(self):
-    #     """Cron job to archive variants with inactive sale periods and reactivate those with active periods."""
-    #     try:
-    #         # Find all variants that need to be checked
-    #         variants = self.env['product.product'].search([
-    #             ('product_tmpl_id', '!=', False),
-    #             ('is_sale_period_active', '!=', False)  # Only variants with sale period data
-    #         ])
+    @api.model
+    def _cron_archive_inactive_variants(self):
+        """Cron job to archive variants with inactive sale periods and reactivate those with active periods."""
+        try:
+            # Find all variants that need to be checked
+            variants = self.env['product.product'].search([
+                ('product_tmpl_id', '!=', False),
+                ('is_sale_period_active', '!=', False)  # Only variants with sale period data
+            ])
 
-    #         for variant in variants:
-    #             try:
-    #                 if not variant.is_sale_period_active and variant.active:
-    #                     # Archive variant if sale period is inactive
-    #                     variant.write({'active': False})
-    #                 elif variant.is_sale_period_active and not variant.active:
-    #                     # Reactivate variant if sale period is active
-    #                     variant.write({'active': True})
-    #             except Exception as e:
-    #                 # Log error but continue with other variants
-    #                 _logger.warning(f"Error processing variant {variant.id}: {e}")
-    #                 continue
-    #     except Exception as e:
-    #         _logger.error(f"Error in _cron_archive_inactive_variants: {e}")
+            for variant in variants:
+                try:
+                    if not variant.is_sale_period_active and variant.active:
+                        # Archive variant if sale period is inactive
+                        variant.write({'active': False})
+                    elif variant.is_sale_period_active and not variant.active:
+                        # Reactivate variant if sale period is active
+                        variant.write({'active': True})
+                except Exception as e:
+                    # Log error but continue with other variants
+                    _logger.warning(f"Error processing variant {variant.id}: {e}")
+                    continue
+        except Exception as e:
+            _logger.error(f"Error in _cron_archive_inactive_variants: {e}")
