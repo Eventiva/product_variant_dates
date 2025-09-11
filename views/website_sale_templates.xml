@@ -48,7 +48,7 @@
 
     <!-- Product List - Show Sale Period Info -->
     <template id="products_item_sale_period_info" inherit_id="website_sale.products_item" name="Products Item Sale Period Info">
-        <xpath expr="//div[@t-attf-class='oe_product_cart h-100 d-flex']" position="inside">
+        <xpath expr="//form[@class='oe_product_cart h-100 d-flex']" position="inside">
             <div t-if="product.sale_period_info" class="position-absolute top-0 end-0 p-2">
                 <small class="badge bg-info text-white">
                     <i class="fa fa-calendar me-1"></i>
