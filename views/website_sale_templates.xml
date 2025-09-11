@@ -52,25 +52,13 @@
         </xpath>
     </template>
 
-    <!-- Override variants template to prevent hiding attributes when values are inactive -->
-    <template id="variants_show_inactive" inherit_id="website_sale.variants" name="Variants Show Inactive Values">
-        <!-- Use all values instead of only active ones -->
-        <xpath expr="//t[@t-set='ptavs']" position="replace">
-            <t t-set="ptavs" t-value="ptal.product_template_value_ids"/>
-        </xpath>
-        <!-- Only hide attribute if ALL values are inactive -->
-        <xpath expr="//t[@t-set='single']" position="replace">
-            <t t-set="single" t-value="len(ptavs.filtered('ptav_active')) == 1 and len(ptavs) == 1"/>
-        </xpath>
-        <!-- Disable inactive radio buttons -->
-        <xpath expr="//input[@type='radio']" position="attributes">
+    <!-- Add visual styling for inactive attribute values -->
+    <template id="variants_style_inactive" inherit_id="website_sale.variants" name="Style Inactive Values">
+        <!-- Style inactive radio/checkbox inputs -->
+        <xpath expr="//input[@type='radio' or @type='checkbox']" position="attributes">
             <attribute name="t-att-disabled">not ptav.ptav_active</attribute>
         </xpath>
-        <!-- Disable inactive checkboxes -->
-        <xpath expr="//input[@type='checkbox']" position="attributes">
-            <attribute name="t-att-disabled">not ptav.ptav_active</attribute>
-        </xpath>
-        <!-- Style inactive options -->
+        <!-- Style inactive labels -->
         <xpath expr="//div[@class='radio_input_value form-check-label']" position="attributes">
             <attribute name="t-attf-class">radio_input_value form-check-label #{'text-muted' if not ptav.ptav_active else ''}</attribute>
         </xpath>
