@@ -148,23 +148,8 @@ class ProductTemplate(models.Model):
     def _cron_archive_inactive_variants(self):
         """Cron job to archive variants with inactive sale periods and reactivate those with active periods."""
         try:
-            # Find all variants that need to be checked
-            variants = self.env['product.product'].search([
-                ('product_tmpl_id', '!=', False),
-                ('is_sale_period_active', '!=', False)  # Only variants with sale period data
-            ])
-
-            for variant in variants:
-                try:
-                    if not variant.is_sale_period_active and variant.active:
-                        # Archive variant if sale period is inactive
-                        variant.write({'active': False})
-                    elif variant.is_sale_period_active and not variant.active:
-                        # Reactivate variant if sale period is active
-                        variant.write({'active': True})
-                except Exception as e:
-                    # Log error but continue with other variants
-                    _logger.warning(f"Error processing variant {variant.id}: {e}")
-                    continue
+            # Use the dedicated method in product.product
+            result = self.env['product.product']._force_archive_inactive_variants()
+            _logger.info(f"Cron job completed: {result['archived']} archived, {result['reactivated']} reactivated")
         except Exception as e:
             _logger.error(f"Error in _cron_archive_inactive_variants: {e}")
