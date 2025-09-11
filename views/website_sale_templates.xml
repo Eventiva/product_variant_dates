@@ -31,7 +31,7 @@
 
     <!-- Variants Template - Show Sale Period Info for Each Variant -->
     <template id="variants_sale_period_info" inherit_id="website_sale.variants" name="Variants Sale Period Info">
-        <xpath expr="//label[@t-attf-for='radio_variant_#{variant_id.id}']" position="inside">
+        <xpath expr="//div[@class='radio_input_value form-check-label']" position="inside">
             <div t-if="combination_info.get('sale_period_info')" class="small text-muted mt-1">
                 <i class="fa fa-calendar me-1"></i>
                 <span t-esc="combination_info['sale_period_info']"/>
