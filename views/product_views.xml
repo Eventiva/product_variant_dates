@@ -83,7 +83,7 @@
                 <field name="sale_end_date"/>
                 <field name="is_sale_period_active"/>
             </xpath>
-            <xpath expr="//filter[@name='active']" position="after">
+            <xpath expr="//filter[@name='inactive']" position="after">
                 <separator/>
                 <filter string="Sale Period Active" name="sale_period_active" domain="[('is_sale_period_active', '=', True)]"/>
                 <filter string="Sale Period Expired" name="sale_period_expired" domain="[('is_sale_period_active', '=', False)]"/>
@@ -94,14 +94,14 @@
     <record id="product_product_search_view_inherit" model="ir.ui.view">
         <field name="name">product.product.search.inherit.sale.dates</field>
         <field name="model">product.product</field>
-        <field name="inherit_id" ref="product.product_product_search_view"/>
+        <field name="inherit_id" ref="product.product_search_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='default_code']" position="after">
                 <field name="sale_start_date"/>
                 <field name="sale_end_date"/>
                 <field name="is_sale_period_active"/>
             </xpath>
-            <xpath expr="//filter[@name='active']" position="after">
+            <xpath expr="//filter[@name='favorites']" position="after">
                 <separator/>
                 <filter string="Sale Period Active" name="sale_period_active" domain="[('is_sale_period_active', '=', True)]"/>
                 <filter string="Sale Period Expired" name="sale_period_expired" domain="[('is_sale_period_active', '=', False)]"/>
