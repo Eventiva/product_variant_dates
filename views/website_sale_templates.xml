@@ -52,20 +52,5 @@
         </xpath>
     </template>
 
-    <!-- Add visual styling for inactive attribute values -->
-    <template id="variants_style_inactive" inherit_id="website_sale.variants" name="Style Inactive Values">
-        <!-- Style inactive radio/checkbox inputs -->
-        <xpath expr="//input[@type='radio' or @type='checkbox']" position="attributes">
-            <attribute name="t-att-disabled">not ptav.ptav_active</attribute>
-        </xpath>
-        <!-- Style inactive labels -->
-        <xpath expr="//div[@class='radio_input_value form-check-label']" position="attributes">
-            <attribute name="t-attf-class">radio_input_value form-check-label #{'text-muted' if not ptav.ptav_active else ''}</attribute>
-        </xpath>
-        <!-- Style inactive list items -->
-        <xpath expr="//li[@class='list-inline-item mb-3 js_attribute_value']" position="attributes">
-            <attribute name="t-attf-class">list-inline-item mb-3 js_attribute_value #{'text-muted' if not ptav.ptav_active else ''}</attribute>
-        </xpath>
-    </template>
 
 </odoo>

@@ -89,11 +89,6 @@ class ProductTemplate(models.Model):
             else:
                 template.sale_period_info = ''
 
-    def _get_possible_variants_sorted(self):
-        """Override to filter out variants that are not within their sale period."""
-        variants = super()._get_possible_variants_sorted()
-        # Filter out variants that are not within their sale period
-        return variants.filtered(lambda v: v.is_sale_period_active)
 
     def _get_combination_info(self, combination=False, product_id=False, add_qty=1.0, parent_combination=False, only_template=False):
         """Override to include sale period information in combination info."""
