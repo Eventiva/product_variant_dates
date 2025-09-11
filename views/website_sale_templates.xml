@@ -42,7 +42,7 @@
     <!-- Variants Template - Hide Expired Variants -->
     <template id="variants_hide_expired" inherit_id="website_sale.variants" name="Hide Expired Variants">
         <xpath expr="//li[@t-foreach='ptavs']" position="attributes">
-            <attribute name="t-attf-class">list-inline-item mb-3 js_attribute_value #{'d-none' if not ptav._get_combination_info_variant().get('is_sale_period_active', True) else ''}"</attribute>
+            <attribute name="t-attf-class">list-inline-item mb-3 js_attribute_value #{'d-none' if not ptav.is_sale_period_active else ''}"</attribute>
         </xpath>
     </template>
 
