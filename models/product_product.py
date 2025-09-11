@@ -65,12 +65,22 @@ class ProductProduct(models.Model):
         """Compute whether the variant is currently within its sale period."""
         now = fields.Datetime.now()
         for variant in self:
+            was_active = variant.is_sale_period_active
             if variant.sale_start_date and variant.sale_start_date > now:
                 variant.is_sale_period_active = False
             elif variant.sale_end_date and variant.sale_end_date < now:
                 variant.is_sale_period_active = False
             else:
                 variant.is_sale_period_active = True
+
+            # Archive or reactivate variant based on sale period change
+            if was_active != variant.is_sale_period_active:
+                if not variant.is_sale_period_active and variant.active:
+                    # Archive variant if sale period became inactive
+                    variant.write({'active': False})
+                elif variant.is_sale_period_active and not variant.active:
+                    # Reactivate variant if sale period became active
+                    variant.write({'active': True})
 
     @api.depends('sale_start_date', 'sale_end_date')
     def _compute_sale_period_info(self):
@@ -92,21 +102,12 @@ class ProductProduct(models.Model):
             else:
                 variant.sale_period_info = ''
 
-    def _is_add_to_cart_possible(self):
-        """Override to check if variant is within sale period."""
-        res = super()._is_add_to_cart_possible()
-        if not res:
-            return res
-
-        # Check if variant is within sale period
-        if not self.is_sale_period_active:
-            return False
-
-        return True
 
     def _get_combination_info_variant(self):
         """Override to include sale period information."""
         info = super()._get_combination_info_variant()
-        info['is_sale_period_active'] = self.is_sale_period_active
-        info['sale_period_info'] = self.sale_period_info
+        # Only include sale period info for active variants
+        if self.active:
+            info['is_sale_period_active'] = self.is_sale_period_active
+            info['sale_period_info'] = self.sale_period_info
         return info

@@ -8,13 +8,6 @@ from odoo.exceptions import ValidationError
 class ProductTemplateAttributeValue(models.Model):
     _inherit = 'product.template.attribute.value'
 
-    # Override ptav_active to consider sale period
-    ptav_active = fields.Boolean(
-        string="Active",
-        compute='_compute_ptav_active_with_sale_period',
-        store=True,
-        help="True if the attribute value is active and within its sale period"
-    )
 
     sale_start_date = fields.Datetime(
         string='Sale Start Date',
@@ -83,16 +76,4 @@ class ProductTemplateAttributeValue(models.Model):
             else:
                 ptav.sale_period_info = ''
 
-    @api.depends('is_sale_period_active')
-    def _compute_ptav_active_with_sale_period(self):
-        """Compute ptav_active considering both the original active state and sale period."""
-        for ptav in self:
-            # Get the original ptav_active value from the parent class
-            # We need to check if the attribute value is still valid for this template
-            original_active = True
-            if ptav.product_attribute_value_id and ptav.attribute_line_id:
-                original_active = ptav.product_attribute_value_id in ptav.attribute_line_id.value_ids
-
-            # The PTAV is active only if it was originally active AND within sale period
-            ptav.ptav_active = original_active and ptav.is_sale_period_active
 

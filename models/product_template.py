@@ -102,7 +102,26 @@ class ProductTemplate(models.Model):
 
         if not only_template and product_id:
             variant = self.env['product.product'].browse(product_id)
-            info['is_sale_period_active'] = variant.is_sale_period_active
-            info['sale_period_info'] = variant.sale_period_info
+            # Only include sale period info for active variants
+            if variant.active:
+                info['is_sale_period_active'] = variant.is_sale_period_active
+                info['sale_period_info'] = variant.sale_period_info
 
         return info
+
+    @api.model
+    def _cron_archive_inactive_variants(self):
+        """Cron job to archive variants with inactive sale periods and reactivate those with active periods."""
+        # Find all variants that need to be checked
+        variants = self.env['product.product'].search([
+            ('product_tmpl_id', '!=', False),
+            ('is_sale_period_active', '!=', False)  # Only variants with sale period data
+        ])
+
+        for variant in variants:
+            if not variant.is_sale_period_active and variant.active:
+                # Archive variant if sale period is inactive
+                variant.write({'active': False})
+            elif variant.is_sale_period_active and not variant.active:
+                # Reactivate variant if sale period is active
+                variant.write({'active': True})

@@ -10,24 +10,6 @@
         </xpath>
     </template>
 
-    <!-- Product Page - Hide Add to Cart if Sale Period Expired -->
-    <template id="product_hide_expired_variants" inherit_id="website_sale.product" name="Hide Expired Variants">
-        <xpath expr="//form[@t-if='product._is_add_to_cart_possible()']" position="attributes">
-            <attribute name="t-if">product._is_add_to_cart_possible() and combination_info.get('is_sale_period_active', True)</attribute>
-        </xpath>
-
-        <!-- Show message when variant is not available due to sale period -->
-        <xpath expr="//p[@t-elif='not product.active']" position="after">
-            <p t-elif="not combination_info.get('is_sale_period_active', True)" class="alert alert-warning">
-                <i class="fa fa-calendar-times me-2"></i>
-                This variant is not currently available for sale.
-                <t t-if="combination_info.get('sale_period_info')">
-                    <br/>
-                    <small t-esc="combination_info['sale_period_info']"/>
-                </t>
-            </p>
-        </xpath>
-    </template>
 
     <!-- Variants Template - Show Sale Period Info for Each Variant -->
     <template id="variants_sale_period_info" inherit_id="website_sale.variants" name="Variants Sale Period Info">
