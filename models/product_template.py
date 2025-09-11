@@ -135,6 +135,10 @@ class ProductTemplate(models.Model):
             only_template=only_template
         )
 
+        # Ensure the price includes price_extra for the adjusted total price
+        if 'price_extra' in info and 'price' in info:
+            info['price'] = info['price'] + info['price_extra']
+
         if not only_template and product_id:
             variant = self.env['product.product'].browse(product_id)
             # Only include sale period info for active variants

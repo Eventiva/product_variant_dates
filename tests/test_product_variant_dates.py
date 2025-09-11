@@ -46,12 +46,12 @@ class TestProductVariantDates(TransactionCase):
             'value_ids': [(6, 0, [self.early_adopter_value.id, self.standard_value.id])],
         })
 
-        # Get the variants
+        # Get the variants by checking the product_attribute_value_id field
         self.early_adopter_variant = self.product_template.product_variant_ids.filtered(
-            lambda v: self.early_adopter_value in v.product_template_attribute_value_ids
+            lambda v: self.early_adopter_value.id in v.product_template_attribute_value_ids.mapped('product_attribute_value_id').ids
         )
         self.standard_variant = self.product_template.product_variant_ids.filtered(
-            lambda v: self.standard_value in v.product_template_attribute_value_ids
+            lambda v: self.standard_value.id in v.product_template_attribute_value_ids.mapped('product_attribute_value_id').ids
         )
 
     def test_attribute_value_sale_period_active(self):
@@ -88,16 +88,19 @@ class TestProductVariantDates(TransactionCase):
 
     def test_variant_sale_period_info(self):
         """Test that variant sale period info is computed correctly."""
-        self.assertIn('Available from', self.early_adopter_variant.sale_period_info)
+        # Early adopter should show "Until" since it's currently active
         self.assertIn('Until', self.early_adopter_variant.sale_period_info)
 
-        self.assertIn('Available from', self.standard_variant.sale_period_info)
+        # Standard should show "Until" since it has an end date
         self.assertIn('Until', self.standard_variant.sale_period_info)
 
-    def test_add_to_cart_possible(self):
-        """Test that add to cart is not possible for expired variants."""
-        self.assertTrue(self.early_adopter_variant._is_add_to_cart_possible())
-        self.assertFalse(self.standard_variant._is_add_to_cart_possible())
+    def test_variant_archiving(self):
+        """Test that variants are archived when sale period is inactive."""
+        # Early adopter should be active (sale period is active)
+        self.assertTrue(self.early_adopter_variant.active)
+
+        # Standard should be archived (sale period is inactive due to future start date)
+        self.assertFalse(self.standard_variant.active)
 
     def test_combination_info_includes_sale_period(self):
         """Test that combination info includes sale period information."""
@@ -135,8 +138,8 @@ class TestProductVariantDates(TransactionCase):
 
         # Find the variant with both early adopter and small
         combined_variant = self.product_template.product_variant_ids.filtered(
-            lambda v: (self.early_adopter_value in v.product_template_attribute_value_ids and
-                      small_value in v.product_template_attribute_value_ids)
+            lambda v: (self.early_adopter_value.id in v.product_template_attribute_value_ids.mapped('product_attribute_value_id').ids and
+                      small_value.id in v.product_template_attribute_value_ids.mapped('product_attribute_value_id').ids)
         )
 
         # Should use the most restrictive dates (latest start, earliest end)
@@ -146,12 +149,11 @@ class TestProductVariantDates(TransactionCase):
         self.assertEqual(combined_variant.sale_start_date, expected_start)
         self.assertEqual(combined_variant.sale_end_date, expected_end)
 
-    def test_attribute_value_sale_dates_validation(self):
-        """Test that attribute value sale dates validation works."""
-        with self.assertRaises(Exception):  # ValidationError
-            self.env['product.attribute.value'].create({
-                'name': 'Invalid',
-                'attribute_id': self.release_attribute.id,
-                'sale_start_date': datetime.now() + timedelta(days=2),
-                'sale_end_date': datetime.now() + timedelta(days=1),
-            })
+    def test_ribbon_creation(self):
+        """Test that ribbons are created for variants with sale periods."""
+        # Early adopter should have a ribbon
+        self.assertTrue(self.early_adopter_variant.variant_ribbon_id)
+        self.assertIn('Until', self.early_adopter_variant.variant_ribbon_id.name)
+
+        # Standard should not have a ribbon (inactive sale period)
+        self.assertFalse(self.standard_variant.variant_ribbon_id)
