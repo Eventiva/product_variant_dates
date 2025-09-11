@@ -33,6 +33,15 @@ class ProductProduct(models.Model):
         help='Human readable information about the sale period'
     )
 
+    # Override the variant_ribbon_id to be computed based on sale period
+    variant_ribbon_id = fields.Many2one(
+        string="Variant Ribbon",
+        comodel_name='product.ribbon',
+        compute='_compute_variant_ribbon_id',
+        store=True,
+        help='Ribbon displayed on the website based on variant sale period'
+    )
+
     @api.depends('product_template_attribute_value_ids.product_attribute_value_id.sale_start_date', 'product_template_attribute_value_ids.product_attribute_value_id.sale_end_date')
     def _compute_sale_dates_from_attributes(self):
         """Compute sale dates from attribute value dates."""
@@ -74,13 +83,20 @@ class ProductProduct(models.Model):
                 variant.is_sale_period_active = True
 
             # Archive or reactivate variant based on sale period change
-            if was_active != variant.is_sale_period_active:
-                if not variant.is_sale_period_active and variant.active:
-                    # Archive variant if sale period became inactive
-                    variant.write({'active': False})
-                elif variant.is_sale_period_active and not variant.active:
-                    # Reactivate variant if sale period became active
-                    variant.write({'active': True})
+            # Temporarily disabled to avoid template errors
+            # if was_active != variant.is_sale_period_active:
+            #     try:
+            #         if not variant.is_sale_period_active and variant.active:
+            #             # Archive variant if sale period became inactive
+            #             variant.write({'active': False})
+            #         elif variant.is_sale_period_active and not variant.active:
+            #             # Reactivate variant if sale period became active
+            #             variant.write({'active': True})
+            #     except Exception as e:
+            #         # Log error but don't break the computation
+            #         import logging
+            #         _logger = logging.getLogger(__name__)
+            #         _logger.warning(f"Error archiving/reactivating variant {variant.id}: {e}")
 
     @api.depends('sale_start_date', 'sale_end_date')
     def _compute_sale_period_info(self):
@@ -101,6 +117,29 @@ class ProductProduct(models.Model):
                 variant.sale_period_info = _('Until %d%s %s') % (day, suffix, month)
             else:
                 variant.sale_period_info = ''
+
+    @api.depends('sale_end_date', 'is_sale_period_active')
+    def _compute_variant_ribbon_id(self):
+        """Compute ribbon based on variant sale period."""
+        for variant in self:
+            if variant.sale_end_date and variant.is_sale_period_active:
+                # Create or get a ribbon for the sale period
+                ribbon = variant.env['product.ribbon'].search([
+                    ('name', '=', variant.sale_period_info)
+                ], limit=1)
+
+                if not ribbon:
+                    # Create a new ribbon for this sale period
+                    ribbon = variant.env['product.ribbon'].create({
+                        'name': variant.sale_period_info,
+                        'bg_color': '#17a2b8',  # Bootstrap info color
+                        'text_color': '#ffffff',
+                        'position': 'right'
+                    })
+
+                variant.variant_ribbon_id = ribbon
+            else:
+                variant.variant_ribbon_id = False
 
 
     def _get_combination_info_variant(self):
