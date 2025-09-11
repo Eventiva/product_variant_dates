@@ -2,13 +2,13 @@
 <odoo>
     <!-- Override the badge_extra_price template to show calculated price instead of price adjustment -->
     <template id="badge_extra_price_calculated" name="Badge Calculated Price" inherit_id="website_sale.badge_extra_price">
-        <xpath expr="//span[@class='badge text-bg-primary border']" position="replace">
-            <span class="badge text-bg-primary border">
+        <xpath expr="//span[@class='badge text-bg-info border']" position="replace">
+            <span class="badge bg-primary text-white border-primary">
                 <!-- Show calculated final price instead of price adjustment -->
                 <t t-set="base_price" t-value="combination_info.get('price', 0)"/>
                 <t t-set="calculated_price" t-value="base_price + price_extra"/>
                 <span t-out="calculated_price"
-                    class="variant_calculated_price text-primary fw-bold"
+                    class="variant_calculated_price text-white fw-bold"
                     style="white-space: nowrap;"
                     t-options='{
                         "widget": "monetary",
