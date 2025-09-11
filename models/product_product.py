@@ -3,6 +3,9 @@
 from datetime import datetime, date
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class ProductProduct(models.Model):
@@ -83,20 +86,17 @@ class ProductProduct(models.Model):
                 variant.is_sale_period_active = True
 
             # Archive or reactivate variant based on sale period change
-            # Temporarily disabled to avoid template errors
-            # if was_active != variant.is_sale_period_active:
-            #     try:
-            #         if not variant.is_sale_period_active and variant.active:
-            #             # Archive variant if sale period became inactive
-            #             variant.write({'active': False})
-            #         elif variant.is_sale_period_active and not variant.active:
-            #             # Reactivate variant if sale period became active
-            #             variant.write({'active': True})
-            #     except Exception as e:
-            #         # Log error but don't break the computation
-            #         import logging
-            #         _logger = logging.getLogger(__name__)
-            #         _logger.warning(f"Error archiving/reactivating variant {variant.id}: {e}")
+            if was_active != variant.is_sale_period_active:
+                try:
+                    if not variant.is_sale_period_active and variant.active:
+                        # Archive variant if sale period became inactive
+                        variant.write({'active': False})
+                    elif variant.is_sale_period_active and not variant.active:
+                        # Reactivate variant if sale period became active
+                        variant.write({'active': True})
+                except Exception as e:
+                    # Log error but don't break the computation
+                    _logger.warning(f"Error archiving/reactivating variant {variant.id}: {e}")
 
     @api.depends('sale_start_date', 'sale_end_date')
     def _compute_sale_period_info(self):
