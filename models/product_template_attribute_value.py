@@ -95,3 +95,7 @@ class ProductTemplateAttributeValue(models.Model):
 
             # The PTAV is active only if it was originally active AND within sale period
             ptav.ptav_active = original_active and ptav.is_sale_period_active
+
+    def _only_active_for_display(self):
+        """Return all values for display purposes, but mark inactive ones."""
+        return self
