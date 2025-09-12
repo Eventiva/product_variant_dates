@@ -37,7 +37,6 @@ Technical Details:
     'data': [
         'data/cron_data.xml',
         'views/product_views.xml',
-        'views/website_sale_templates.xml',
         'security/ir.model.access.csv',
     ],
     'test': [
