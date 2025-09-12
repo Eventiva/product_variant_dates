@@ -135,9 +135,8 @@ class ProductTemplate(models.Model):
             only_template=only_template
         )
 
-        # Ensure the price includes price_extra for the adjusted total price
-        if 'price_extra' in info and 'price' in info:
-            info['price'] = info['price'] + info['price_extra']
+        # Note: We don't modify the base price here - that should remain as the original list price
+        # The badge template will handle showing the calculated price for event tickets
 
         if not only_template and product_id:
             variant = self.env['product.product'].browse(product_id)
