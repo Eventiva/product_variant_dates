@@ -118,16 +118,19 @@ class ProductProduct(models.Model):
         """Compute ribbon based on variant sale period."""
         for variant in self:
             if variant.sale_end_date and variant.is_sale_period_active:
-                # Create or get a ribbon for the sale period
+                # Create a unique ribbon name for this variant
+                variant_ribbon_name = f"Variant: {variant.sale_period_info}"
+
+                # Create or get a ribbon for the variant sale period
                 ribbon = variant.env['product.ribbon'].search([
-                    ('name', '=', variant.sale_period_info)
+                    ('name', '=', variant_ribbon_name)
                 ], limit=1)
 
                 if not ribbon:
-                    # Create a new ribbon for this sale period
+                    # Create a new ribbon for this variant sale period
                     ribbon = variant.env['product.ribbon'].create({
-                        'name': variant.sale_period_info,
-                        'bg_color': '#17a2b8',  # Bootstrap info color
+                        'name': variant_ribbon_name,
+                        'bg_color': '#28a745',  # Green color to distinguish from product ribbon
                         'text_color': '#ffffff',
                         'position': 'right'
                     })

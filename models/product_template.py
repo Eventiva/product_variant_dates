@@ -106,16 +106,19 @@ class ProductTemplate(models.Model):
         """Compute ribbon based on sale period."""
         for template in self:
             if template.sale_end_date and template.is_sale_period_active:
-                # Create or get a ribbon for the sale period
+                # Create a unique ribbon name for this product template
+                product_ribbon_name = f"Product: {template.sale_period_info}"
+
+                # Create or get a ribbon for the product sale period
                 ribbon = template.env['product.ribbon'].search([
-                    ('name', '=', template.sale_period_info)
+                    ('name', '=', product_ribbon_name)
                 ], limit=1)
 
                 if not ribbon:
-                    # Create a new ribbon for this sale period
+                    # Create a new ribbon for this product sale period
                     ribbon = template.env['product.ribbon'].create({
-                        'name': template.sale_period_info,
-                        'bg_color': '#17a2b8',  # Bootstrap info color
+                        'name': product_ribbon_name,
+                        'bg_color': '#17a2b8',  # Blue color for product ribbon
                         'text_color': '#ffffff',
                         'position': 'right'
                     })
