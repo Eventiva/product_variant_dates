@@ -77,11 +77,9 @@ class ProductProduct(models.Model):
         """Compute whether the variant is currently within its sale period."""
         now = fields.Datetime.now()
         for variant in self:
-            # Store the previous active state before computing new value
-            was_active = variant.active
+            # Store previous state for comparison
             was_sale_period_active = variant.is_sale_period_active
 
-            # Compute new sale period active state
             if variant.sale_start_date and variant.sale_start_date > now:
                 variant.is_sale_period_active = False
             elif variant.sale_end_date and variant.sale_end_date < now:
@@ -89,20 +87,10 @@ class ProductProduct(models.Model):
             else:
                 variant.is_sale_period_active = True
 
-            # Archive or reactivate variant based on sale period change
-            if was_sale_period_active != variant.is_sale_period_active:
-                try:
-                    if not variant.is_sale_period_active and was_active:
-                        # Archive variant if sale period became inactive
-                        variant.write({'active': False})
-                        _logger.info(f"Archived variant {variant.id} (sale period inactive)")
-                    elif variant.is_sale_period_active and not was_active:
-                        # Reactivate variant if sale period became active
-                        variant.write({'active': True})
-                        _logger.info(f"Reactivated variant {variant.id} (sale period active)")
-                except Exception as e:
-                    # Log error but don't break the computation
-                    _logger.warning(f"Error archiving/reactivating variant {variant.id}: {e}")
+            # Trigger archiving if sale period status changed and we're not already in archiving context
+            if (was_sale_period_active != variant.is_sale_period_active and
+                not self.env.context.get('skip_archiving')):
+                variant._update_variant_archiving()
 
     @api.depends('sale_start_date', 'sale_end_date')
     def _compute_sale_period_info(self):
@@ -148,6 +136,20 @@ class ProductProduct(models.Model):
                 variant.variant_ribbon_id = False
 
 
+    def _update_variant_archiving(self):
+        """Update variant archiving based on sale period status."""
+        try:
+            if not self.is_sale_period_active and self.active:
+                # Archive variant if sale period is inactive
+                self.with_context(skip_archiving=True).write({'active': False})
+                _logger.info(f"Archived variant {self.id} (sale period inactive)")
+            elif self.is_sale_period_active and not self.active:
+                # Reactivate variant if sale period is active
+                self.with_context(skip_archiving=True).write({'active': True})
+                _logger.info(f"Reactivated variant {self.id} (sale period active)")
+        except Exception as e:
+            _logger.warning(f"Error updating variant {self.id} archiving: {e}")
+
     def _get_combination_info_variant(self):
         """Override to include sale period information."""
         info = super()._get_combination_info_variant()
@@ -172,16 +174,16 @@ class ProductProduct(models.Model):
 
         for variant in variants:
             try:
-                # Force recomputation of sale period active
-                variant._compute_is_sale_period_active()
+                # Force recomputation of sale period active with skip_archiving context
+                variant.with_context(skip_archiving=True)._compute_is_sale_period_active()
 
                 # Check if variant should be archived/reactivated
                 if not variant.is_sale_period_active and variant.active:
-                    variant.write({'active': False})
+                    variant.with_context(skip_archiving=True).write({'active': False})
                     archived_count += 1
                     _logger.info(f"Archived variant {variant.id} - {variant.display_name}")
                 elif variant.is_sale_period_active and not variant.active:
-                    variant.write({'active': True})
+                    variant.with_context(skip_archiving=True).write({'active': True})
                     reactivated_count += 1
                     _logger.info(f"Reactivated variant {variant.id} - {variant.display_name}")
 

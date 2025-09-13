@@ -22,21 +22,24 @@ class TestProductVariantDates(TransactionCase):
             'create_variant': 'always',
         })
 
+        # Use fixed dates to avoid timing issues
+        base_date = datetime(2025, 9, 1, 12, 0, 0)
+
         # Create attribute values with sale dates
         self.early_adopter_value = self.env['product.attribute.value'].create({
             'name': 'Early Adopter',
             'attribute_id': self.release_attribute.id,
             'default_extra_price': -20.00,
-            'sale_start_date': datetime.now() - timedelta(days=30),
-            'sale_end_date': datetime.now() + timedelta(days=30),
+            'sale_start_date': base_date - timedelta(days=30),
+            'sale_end_date': base_date + timedelta(days=30),
         })
 
         self.standard_value = self.env['product.attribute.value'].create({
             'name': 'Standard',
             'attribute_id': self.release_attribute.id,
             'default_extra_price': -10.00,
-            'sale_start_date': datetime.now() + timedelta(days=7),
-            'sale_end_date': datetime.now() + timedelta(days=60),
+            'sale_start_date': base_date + timedelta(days=7),
+            'sale_end_date': base_date + timedelta(days=60),
         })
 
         # Create attribute line
@@ -99,7 +102,10 @@ class TestProductVariantDates(TransactionCase):
         # Early adopter should be active (sale period is active)
         self.assertTrue(self.early_adopter_variant.active)
 
-        # Standard should be archived (sale period is inactive due to future start date)
+        # Standard should have inactive sale period (due to future start date)
+        self.assertFalse(self.standard_variant.is_sale_period_active)
+
+        # Standard should be automatically archived due to inactive sale period
         self.assertFalse(self.standard_variant.active)
 
     def test_combination_info_includes_sale_period(self):
@@ -122,11 +128,13 @@ class TestProductVariantDates(TransactionCase):
             'create_variant': 'always',
         })
 
+        # Use fixed dates to avoid timing issues
+        base_date = datetime(2025, 9, 1, 12, 0, 0)
         small_value = self.env['product.attribute.value'].create({
             'name': 'Small',
             'attribute_id': size_attribute.id,
-            'sale_start_date': datetime.now() - timedelta(days=10),
-            'sale_end_date': datetime.now() + timedelta(days=10),
+            'sale_start_date': base_date - timedelta(days=10),
+            'sale_end_date': base_date + timedelta(days=10),
         })
 
         # Add size attribute to the product
@@ -157,3 +165,39 @@ class TestProductVariantDates(TransactionCase):
 
         # Standard should not have a ribbon (inactive sale period)
         self.assertFalse(self.standard_variant.variant_ribbon_id)
+
+    def test_archiving_on_date_change(self):
+        """Test that variants are archived/reactivated when sale dates change."""
+        # Create a variant with active sale period
+        base_date = datetime(2025, 9, 1, 12, 0, 0)
+        active_value = self.env['product.attribute.value'].create({
+            'name': 'Active Test',
+            'attribute_id': self.release_attribute.id,
+            'sale_start_date': base_date - timedelta(days=1),  # Started yesterday
+            'sale_end_date': base_date + timedelta(days=1),    # Ends tomorrow
+        })
+
+        # Add to product template
+        self.env['product.template.attribute.line'].create({
+            'product_tmpl_id': self.product_template.id,
+            'attribute_id': self.release_attribute.id,
+            'value_ids': [(6, 0, [active_value.id])],
+        })
+
+        # Find the variant
+        test_variant = self.product_template.product_variant_ids.filtered(
+            lambda v: active_value.id in v.product_template_attribute_value_ids.mapped('product_attribute_value_id').ids
+        )
+
+        # Should be active initially
+        self.assertTrue(test_variant.active)
+        self.assertTrue(test_variant.is_sale_period_active)
+
+        # Change end date to past - should archive
+        active_value.sale_end_date = base_date - timedelta(days=1)
+        test_variant._compute_sale_dates_from_attributes()
+        test_variant._compute_is_sale_period_active()
+
+        # Should now be archived
+        self.assertFalse(test_variant.active)
+        self.assertFalse(test_variant.is_sale_period_active)
