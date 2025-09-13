@@ -107,7 +107,7 @@ class ProductTemplate(models.Model):
         for template in self:
             if template.sale_end_date and template.is_sale_period_active:
                 # Create a unique ribbon name for this product template
-                product_ribbon_name = f"Product: {template.sale_period_info}"
+                product_ribbon_name = f"{template.sale_period_info}"
 
                 # Create or get a ribbon for the product sale period
                 ribbon = template.env['product.ribbon'].search([

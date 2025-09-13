@@ -115,7 +115,7 @@ class ProductProduct(models.Model):
         """Get or create a default ribbon based on variant sale period."""
         if self.sale_end_date:
             # Create a unique ribbon name for this variant
-            variant_ribbon_name = f"Variant: {self.sale_period_info}"
+            variant_ribbon_name = f"{self.sale_period_info}"
 
             # Create or get a ribbon for the variant sale period
             ribbon = self.env['product.ribbon'].search([
