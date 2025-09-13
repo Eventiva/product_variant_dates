@@ -23,23 +23,24 @@ class TestProductVariantDates(TransactionCase):
         })
 
         # Use fixed dates to avoid timing issues
-        base_date = datetime(2025, 9, 1, 12, 0, 0)
+        # Set base date to a past date so we can control the test scenarios
+        base_date = datetime(2025, 1, 1, 12, 0, 0)
 
         # Create attribute values with sale dates
         self.early_adopter_value = self.env['product.attribute.value'].create({
             'name': 'Early Adopter',
             'attribute_id': self.release_attribute.id,
             'default_extra_price': -20.00,
-            'sale_start_date': base_date - timedelta(days=30),
-            'sale_end_date': base_date + timedelta(days=30),
+            'sale_start_date': (base_date - timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S'),  # Started 30 days ago
+            'sale_end_date': (base_date + timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S'),    # Ends in 30 days
         })
 
         self.standard_value = self.env['product.attribute.value'].create({
             'name': 'Standard',
             'attribute_id': self.release_attribute.id,
             'default_extra_price': -10.00,
-            'sale_start_date': base_date + timedelta(days=7),
-            'sale_end_date': base_date + timedelta(days=60),
+            'sale_start_date': (base_date + timedelta(days=7)).strftime('%Y-%m-%d %H:%M:%S'),   # Starts in 7 days (future)
+            'sale_end_date': (base_date + timedelta(days=60)).strftime('%Y-%m-%d %H:%M:%S'),    # Ends in 60 days
         })
 
         # Create attribute line
@@ -129,12 +130,12 @@ class TestProductVariantDates(TransactionCase):
         })
 
         # Use fixed dates to avoid timing issues
-        base_date = datetime(2025, 9, 1, 12, 0, 0)
+        base_date = datetime(2025, 1, 1, 12, 0, 0)
         small_value = self.env['product.attribute.value'].create({
             'name': 'Small',
             'attribute_id': size_attribute.id,
-            'sale_start_date': base_date - timedelta(days=10),
-            'sale_end_date': base_date + timedelta(days=10),
+            'sale_start_date': (base_date - timedelta(days=10)).strftime('%Y-%m-%d %H:%M:%S'),
+            'sale_end_date': (base_date + timedelta(days=10)).strftime('%Y-%m-%d %H:%M:%S'),
         })
 
         # Add size attribute to the product
@@ -168,26 +169,37 @@ class TestProductVariantDates(TransactionCase):
 
     def test_archiving_on_date_change(self):
         """Test that variants are archived/reactivated when sale dates change."""
+        # Create a new product template for this test to avoid conflicts
+        test_template = self.env['product.template'].create({
+            'name': 'Test Product',
+            'type': 'consu',
+            'list_price': 50.00,
+        })
+
         # Create a variant with active sale period
-        base_date = datetime(2025, 9, 1, 12, 0, 0)
+        base_date = datetime(2025, 1, 1, 12, 0, 0)
         active_value = self.env['product.attribute.value'].create({
             'name': 'Active Test',
             'attribute_id': self.release_attribute.id,
-            'sale_start_date': base_date - timedelta(days=1),  # Started yesterday
-            'sale_end_date': base_date + timedelta(days=1),    # Ends tomorrow
+            'sale_start_date': (base_date - timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S'),  # Started yesterday
+            'sale_end_date': (base_date + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S'),    # Ends tomorrow
         })
 
         # Add to product template
         self.env['product.template.attribute.line'].create({
-            'product_tmpl_id': self.product_template.id,
+            'product_tmpl_id': test_template.id,
             'attribute_id': self.release_attribute.id,
             'value_ids': [(6, 0, [active_value.id])],
         })
 
-        # Find the variant
-        test_variant = self.product_template.product_variant_ids.filtered(
+        # Find the variant - should be exactly one
+        test_variant = test_template.product_variant_ids.filtered(
             lambda v: active_value.id in v.product_template_attribute_value_ids.mapped('product_attribute_value_id').ids
         )
+
+        # Ensure we have exactly one variant
+        self.assertEqual(len(test_variant), 1)
+        test_variant = test_variant[0]
 
         # Should be active initially
         self.assertTrue(test_variant.active)
