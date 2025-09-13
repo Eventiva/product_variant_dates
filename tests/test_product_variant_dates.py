@@ -23,8 +23,9 @@ class TestProductVariantDates(TransactionCase):
         })
 
         # Use fixed dates to avoid timing issues
-        # Set base date to a past date so we can control the test scenarios
-        base_date = datetime(2024, 1, 1, 12, 0, 0)
+        # Use fields.Datetime.now() as base to ensure timezone consistency
+        now = self.env['product.product']._fields['sale_start_date'].now()
+        base_date = now.replace(year=2024, month=1, day=1, hour=12, minute=0, second=0, microsecond=0)
 
         # Create attribute values with sale dates using datetime objects
         self.early_adopter_value = self.env['product.attribute.value'].create({
@@ -140,7 +141,8 @@ class TestProductVariantDates(TransactionCase):
         })
 
         # Use fixed dates to avoid timing issues
-        base_date = datetime(2024, 1, 1, 12, 0, 0)
+        now = self.env['product.product']._fields['sale_start_date'].now()
+        base_date = now.replace(year=2024, month=1, day=1, hour=12, minute=0, second=0, microsecond=0)
         small_value = self.env['product.attribute.value'].create({
             'name': 'Small',
             'attribute_id': size_attribute.id,
@@ -190,7 +192,8 @@ class TestProductVariantDates(TransactionCase):
         })
 
         # Create a variant with active sale period
-        base_date = datetime(2024, 1, 1, 12, 0, 0)
+        now = self.env['product.product']._fields['sale_start_date'].now()
+        base_date = now.replace(year=2024, month=1, day=1, hour=12, minute=0, second=0, microsecond=0)
         active_value = self.env['product.attribute.value'].create({
             'name': 'Active Test',
             'attribute_id': self.release_attribute.id,
