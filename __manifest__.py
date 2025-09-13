@@ -48,5 +48,5 @@ Technical Details:
     'installable': True,
     'auto_install': False,
     'application': False,
-    'license': 'Other OSI approved license',
+    'license': 'Other proprietary',
 }

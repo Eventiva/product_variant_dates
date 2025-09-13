@@ -7,9 +7,9 @@
         <field name="inherit_id" ref="product.product_attribute_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='value_ids']//list//field[@name='name']" position="after">
-                <field name="sale_start_date" optional="hide"/>
-                <field name="sale_end_date" optional="hide"/>
-                <field name="is_sale_period_active" optional="hide"/>
+                <field name="sale_start_date"/>
+                <field name="sale_end_date"/>
+                <field name="is_sale_period_active"/>
             </xpath>
         </field>
     </record>
