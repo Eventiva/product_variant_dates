@@ -26,21 +26,21 @@ class TestProductVariantDates(TransactionCase):
         # Set base date to a past date so we can control the test scenarios
         base_date = datetime(2024, 1, 1, 12, 0, 0)
 
-        # Create attribute values with sale dates
+        # Create attribute values with sale dates using datetime objects
         self.early_adopter_value = self.env['product.attribute.value'].create({
             'name': 'Early Adopter',
             'attribute_id': self.release_attribute.id,
             'default_extra_price': -20.00,
-            'sale_start_date': (base_date - timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S'),  # Started 30 days ago
-            'sale_end_date': (base_date + timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S'),    # Ends in 30 days
+            'sale_start_date': base_date - timedelta(days=30),  # Started 30 days ago
+            'sale_end_date': base_date + timedelta(days=30),    # Ends in 30 days
         })
 
         self.standard_value = self.env['product.attribute.value'].create({
             'name': 'Standard',
             'attribute_id': self.release_attribute.id,
             'default_extra_price': -10.00,
-            'sale_start_date': (base_date + timedelta(days=7)).strftime('%Y-%m-%d %H:%M:%S'),   # Starts in 7 days (future)
-            'sale_end_date': (base_date + timedelta(days=60)).strftime('%Y-%m-%d %H:%M:%S'),    # Ends in 60 days
+            'sale_start_date': base_date + timedelta(days=7),   # Starts in 7 days (future)
+            'sale_end_date': base_date + timedelta(days=60),    # Ends in 60 days
         })
 
         # Create attribute line
@@ -49,6 +49,9 @@ class TestProductVariantDates(TransactionCase):
             'attribute_id': self.release_attribute.id,
             'value_ids': [(6, 0, [self.early_adopter_value.id, self.standard_value.id])],
         })
+
+        # Force variant creation
+        self.product_template._create_variant_ids()
 
         # Get the variants by checking the product_attribute_value_id field
         self.early_adopter_variant = self.product_template.product_variant_ids.filtered(
@@ -141,8 +144,8 @@ class TestProductVariantDates(TransactionCase):
         small_value = self.env['product.attribute.value'].create({
             'name': 'Small',
             'attribute_id': size_attribute.id,
-            'sale_start_date': (base_date - timedelta(days=10)).strftime('%Y-%m-%d %H:%M:%S'),
-            'sale_end_date': (base_date + timedelta(days=10)).strftime('%Y-%m-%d %H:%M:%S'),
+            'sale_start_date': base_date - timedelta(days=10),
+            'sale_end_date': base_date + timedelta(days=10),
         })
 
         # Add size attribute to the product
@@ -191,8 +194,8 @@ class TestProductVariantDates(TransactionCase):
         active_value = self.env['product.attribute.value'].create({
             'name': 'Active Test',
             'attribute_id': self.release_attribute.id,
-            'sale_start_date': (base_date - timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S'),  # Started yesterday
-            'sale_end_date': (base_date + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S'),    # Ends tomorrow
+            'sale_start_date': base_date - timedelta(days=1),  # Started yesterday
+            'sale_end_date': base_date + timedelta(days=1),    # Ends tomorrow
         })
 
         # Add to product template
