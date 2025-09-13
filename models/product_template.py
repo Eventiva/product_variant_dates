@@ -125,7 +125,7 @@ class ProductTemplate(models.Model):
                 template.website_ribbon_id = False
 
 
-    def _get_combination_info(self, combination=False, product_id=False, add_qty=1.0, parent_combination=False, only_template=False):
+    def _get_combination_info(self, combination=None, product_id=None, add_qty=1, parent_combination=None, only_template=None):
         """Override to include sale period information in combination info."""
         info = super()._get_combination_info(
             combination=combination,
