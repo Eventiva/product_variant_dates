@@ -36,13 +36,11 @@ class ProductProduct(models.Model):
         help='Human readable information about the sale period'
     )
 
-    # Override the variant_ribbon_id to be computed based on sale period
+    # Override the variant_ribbon_id to be editable but with default based on sale period
     variant_ribbon_id = fields.Many2one(
         string="Variant Ribbon",
         comodel_name='product.ribbon',
-        compute='_compute_variant_ribbon_id',
-        store=True,
-        help='Ribbon displayed on the website based on variant sale period'
+        help='Ribbon displayed on the website. Leave empty for automatic sale period ribbon.'
     )
 
     @api.depends('product_template_attribute_value_ids.product_attribute_value_id.sale_start_date', 'product_template_attribute_value_ids.product_attribute_value_id.sale_end_date')
@@ -113,29 +111,50 @@ class ProductProduct(models.Model):
             else:
                 variant.sale_period_info = ''
 
-    @api.depends('sale_end_date', 'is_sale_period_active')
-    def _compute_variant_ribbon_id(self):
-        """Compute ribbon based on variant sale period."""
+    def _get_default_variant_ribbon(self):
+        """Get or create a default ribbon based on variant sale period."""
+        if self.sale_end_date:
+            # Create a unique ribbon name for this variant
+            variant_ribbon_name = f"Variant: {self.sale_period_info}"
+
+            # Create or get a ribbon for the variant sale period
+            ribbon = self.env['product.ribbon'].search([
+                ('name', '=', variant_ribbon_name)
+            ], limit=1)
+
+            if not ribbon:
+                # Create a new ribbon for this variant sale period
+                ribbon = self.env['product.ribbon'].create({
+                    'name': variant_ribbon_name,
+                    'bg_color': '#28a745',  # Green color to distinguish from product ribbon
+                    'text_color': '#ffffff',
+                    'position': 'right'
+                })
+
+            return ribbon
+        return False
+
+    @api.model
+    def create(self, vals):
+        """Override create to set default ribbon."""
+        variant = super().create(vals)
+        if not variant.variant_ribbon_id:
+            variant.variant_ribbon_id = variant._get_default_variant_ribbon()
+        return variant
+
+    def write(self, vals):
+        """Override write to update ribbon when sale dates change."""
+        result = super().write(vals)
+        # Update ribbon if sale dates changed and no manual ribbon is set
+        if not self.variant_ribbon_id and self.sale_end_date:
+            self.variant_ribbon_id = self._get_default_variant_ribbon()
+        return result
+
+    def update_variant_ribbons(self):
+        """Manually update variant ribbons for existing variants."""
         for variant in self:
-            if variant.sale_end_date and variant.is_sale_period_active:
-                # Create a unique ribbon name for this variant
-                variant_ribbon_name = f"Variant: {variant.sale_period_info}"
-
-                # Create or get a ribbon for the variant sale period
-                ribbon = variant.env['product.ribbon'].search([
-                    ('name', '=', variant_ribbon_name)
-                ], limit=1)
-
-                if not ribbon:
-                    # Create a new ribbon for this variant sale period
-                    ribbon = variant.env['product.ribbon'].create({
-                        'name': variant_ribbon_name,
-                        'bg_color': '#28a745',  # Green color to distinguish from product ribbon
-                        'text_color': '#ffffff',
-                        'position': 'right'
-                    })
-
-                variant.variant_ribbon_id = ribbon
+            if variant.sale_end_date:
+                variant.variant_ribbon_id = variant._get_default_variant_ribbon()
             else:
                 variant.variant_ribbon_id = False
 
