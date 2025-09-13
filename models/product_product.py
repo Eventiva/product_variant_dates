@@ -89,7 +89,8 @@ class ProductProduct(models.Model):
 
             # Trigger archiving if sale period status changed and we're not already in archiving context
             if (was_sale_period_active != variant.is_sale_period_active and
-                not self.env.context.get('skip_archiving')):
+                not self.env.context.get('skip_archiving') and
+                variant.id):  # Only for existing variants, not during creation
                 variant._update_variant_archiving()
 
     @api.depends('sale_start_date', 'sale_end_date')
