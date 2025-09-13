@@ -108,4 +108,16 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Override website sale template to change "This combination does not exist" message -->
+    <record id="website_sale_product_template_inherit" model="ir.ui.view">
+        <field name="name">website.sale.product.template.inherit.sale.dates</field>
+        <field name="model">ir.ui.view</field>
+        <field name="inherit_id" ref="website_sale.product"/>
+        <field name="arch" type="xml">
+            <xpath expr="//p[@class='css_not_available_msg alert alert-warning']" position="replace">
+                <p t-if="True" class="css_not_available_msg alert alert-warning">This variation is not currently available</p>
+            </xpath>
+        </field>
+    </record>
 </odoo>
