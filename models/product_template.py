@@ -57,13 +57,39 @@ class ProductTemplate(models.Model):
                 template.sale_end_date = False
                 continue
 
-            # Get dates from all variants (including inactive ones)
-            start_dates = [v.sale_start_date for v in variants if v.sale_start_date]
-            end_dates = [v.sale_end_date for v in variants if v.sale_end_date]
+            now = fields.Datetime.now()
 
-            # Use the earliest start date and latest end date from ALL variants
-            template.sale_start_date = min(start_dates) if start_dates else False
-            template.sale_end_date = max(end_dates) if end_dates else False
+            # Find the currently active period instead of using the latest end date
+            active_variants = []
+            for variant in variants:
+                if variant.sale_start_date and variant.sale_end_date:
+                    # Check if this variant's period is currently active
+                    if (variant.sale_start_date <= now <= variant.sale_end_date):
+                        active_variants.append(variant)
+
+            if active_variants:
+                # Use the currently active period
+                start_dates = [v.sale_start_date for v in active_variants if v.sale_start_date]
+                end_dates = [v.sale_end_date for v in active_variants if v.sale_end_date]
+                template.sale_start_date = min(start_dates) if start_dates else False
+                template.sale_end_date = min(end_dates) if end_dates else False  # Use min to get the earliest ending active period
+            else:
+                # No active period, use the most recent period that has ended
+                past_variants = []
+                for variant in variants:
+                    if variant.sale_start_date and variant.sale_end_date and variant.sale_end_date < now:
+                        past_variants.append(variant)
+
+                if past_variants:
+                    # Use the most recently ended period
+                    start_dates = [v.sale_start_date for v in past_variants if v.sale_start_date]
+                    end_dates = [v.sale_end_date for v in past_variants if v.sale_end_date]
+                    template.sale_start_date = min(start_dates) if start_dates else False
+                    template.sale_end_date = max(end_dates) if end_dates else False
+                else:
+                    # No periods at all
+                    template.sale_start_date = False
+                    template.sale_end_date = False
 
     @api.depends('sale_start_date', 'sale_end_date')
     def _compute_is_sale_period_active(self):
