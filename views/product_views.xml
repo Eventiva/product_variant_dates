@@ -115,7 +115,7 @@
         <field name="model">ir.ui.view</field>
         <field name="inherit_id" ref="website_sale.product"/>
         <field name="arch" type="xml">
-            <xpath expr="//p[@class='css_not_available_msg alert alert-warning']" position="replace">
+            <xpath expr="//p[hasclass('css_not_available_msg') and hasclass('alert') and hasclass('alert-warning')]" position="replace">
                 <p t-if="True" class="css_not_available_msg alert alert-warning">This variation is not currently available</p>
             </xpath>
         </field>
