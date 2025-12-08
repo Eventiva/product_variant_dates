@@ -154,14 +154,15 @@ class ProductTemplate(models.Model):
                 template.website_ribbon_id = False
 
 
-    def _get_combination_info(self, combination=None, product_id=None, add_qty=1, parent_combination=None, only_template=None):
+    def _get_combination_info(self, combination=None, product_id=None, add_qty=1, parent_combination=None, only_template=None, **kwargs):
         """Override to include sale period information in combination info."""
+        # Odoo 19 parent method doesn't accept parent_combination, so we don't pass it
         info = super()._get_combination_info(
             combination=combination,
             product_id=product_id,
             add_qty=add_qty,
-            parent_combination=parent_combination,
-            only_template=only_template
+            only_template=only_template,
+            **kwargs
         )
 
         if not only_template and product_id:
