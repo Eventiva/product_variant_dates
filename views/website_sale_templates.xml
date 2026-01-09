@@ -2,9 +2,17 @@
 <odoo>
     <!-- Override products_item template to show only cheapest price from available variants -->
     <template id="products_item" inherit_id="website_sale.products_item">
-        <!-- The price display will automatically show only the cheapest price 
-             because _get_website_price_range now returns (min_price, min_price) 
-             for variants that are currently within their sale period -->
+        <!-- Ensure only the minimum price is displayed (no price range) -->
+        <!-- The backend _get_website_price_range returns (min_price, min_price) 
+             so the template will show a single price, but we ensure it's explicit -->
+        <xpath expr="//div[hasclass('product_price')]" position="attributes">
+            <attribute name="t-attf-class">product_price d-flex justify-content-between align-items-center flex-wrap</attribute>
+        </xpath>
+        
+        <!-- Hide any max price display if it exists (when min != max in template_price_vals) -->
+        <!-- The backend ensures min == max, but this provides additional safety -->
+        <xpath expr="//span[hasclass('oe_price') and contains(@t-out, 'template_price_vals')]" position="attributes">
+            <attribute name="t-if">template_price_vals and template_price_vals.get('price_reduce')</attribute>
+        </xpath>
     </template>
 </odoo>
-
