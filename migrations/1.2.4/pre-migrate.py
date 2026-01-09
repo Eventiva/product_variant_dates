@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from . import models
-
-
-def post_init_hook(cr, registry):
+def migrate(cr, version):
     """
     Clean up orphaned product_variant_dates_display_price module record.
     This module was removed during Odoo 19 upgrade but may still exist in database.
     """
+    # Delete the orphaned module record if it exists
     cr.execute("""
         DELETE FROM ir_module_module 
         WHERE name = 'product_variant_dates_display_price'
@@ -24,3 +22,4 @@ def post_init_hook(cr, registry):
         DELETE FROM ir_model_data 
         WHERE module = 'product_variant_dates_display_price'
     """)
+
