@@ -193,12 +193,27 @@ class ProductTemplate(models.Model):
         return active_variants
 
     def _get_website_price_range(self):
-        """Override to only consider variants with active sale periods."""
-        # Get active variants only
-        active_variants = self._get_active_sale_period_variants()
+        """Override to only consider variants with active sale periods and return cheapest price."""
+        now = fields.Datetime.now()
+        
+        # Get variants that are currently within their sale period
+        available_variants = []
+        for variant in self.product_variant_ids:
+            if not variant.active:
+                continue
+            
+            # Check if variant is within its sale period
+            if variant.sale_start_date and variant.sale_start_date > now:
+                continue  # Sale hasn't started yet
+            if variant.sale_end_date and variant.sale_end_date < now:
+                continue  # Sale has ended
+            
+            # If variant has no sale dates, include it (always available)
+            # If variant has sale dates and we're within the period, include it
+            available_variants.append(variant)
 
-        # If we have active variants, compute price from them only
-        if active_variants:
+        # If we have available variants, compute price from them only
+        if available_variants:
             # Get pricelist from context or website
             try:
                 website = self.env['website'].get_current_website()
@@ -206,9 +221,9 @@ class ProductTemplate(models.Model):
             except:
                 pricelist = False
 
-            # Compute prices for active variants
+            # Compute prices for available variants
             prices = []
-            for variant in active_variants:
+            for variant in available_variants:
                 # Get the price from pricelist or use list_price
                 if pricelist:
                     try:
@@ -223,12 +238,16 @@ class ProductTemplate(models.Model):
 
             if prices:
                 min_price = min(prices)
-                max_price = max(prices)
-                return (min_price, max_price)
+                # Return only the cheapest price (min_price for both min and max)
+                return (min_price, min_price)
 
-        # Fall back to parent method if no active variants
+        # Fall back to parent method if no available variants
         if hasattr(super(ProductTemplate, self), '_get_website_price_range'):
-            return super(ProductTemplate, self)._get_website_price_range()
+            result = super(ProductTemplate, self)._get_website_price_range()
+            # If parent returns a range, return only the minimum
+            if isinstance(result, tuple) and len(result) == 2:
+                return (result[0], result[0])  # Return min price for both
+            return result
         else:
             # If parent method doesn't exist, return template price as fallback
             return (self.list_price, self.list_price)

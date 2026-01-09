@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Product Variant Sale Dates',
-    'version': '1.2.3',
+    'version': '1.2.4',
     'category': 'Sales/Sales',
     'summary': 'Add start and end sale dates to product variants',
     'description': """
@@ -37,6 +37,7 @@ Technical Details:
     'data': [
         'data/cron_data.xml',
         'views/product_views.xml',
+        'views/website_sale_templates.xml',
         'security/ir.model.access.csv',
     ],
     'test': [

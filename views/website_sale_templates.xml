@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Override products_item template to show only cheapest price from available variants -->
+    <template id="products_item" inherit_id="website_sale.products_item">
+        <!-- The price display will automatically show only the cheapest price 
+             because _get_website_price_range now returns (min_price, min_price) 
+             for variants that are currently within their sale period -->
+    </template>
+</odoo>
+
