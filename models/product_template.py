@@ -192,56 +192,57 @@ class ProductTemplate(models.Model):
                 active_variants = self.product_variant_ids.filtered(lambda v: v.active)
         return active_variants
 
-    def _get_website_price_range(self):
-        """Override to only consider active variants and return cheapest price."""
+    def _get_cheapest_variant_price(self, pricelist=None):
+        """Get the cheapest price from active variants."""
         # Get only active variants (archiving logic handles sale period dates)
         available_variants = self.product_variant_ids.filtered(lambda v: v.active)
 
-        # If we have available variants, compute price from them only
-        if available_variants:
-            # Get pricelist from context or website
+        if not available_variants:
+            return self.list_price
+
+        # Get pricelist if not provided
+        if not pricelist:
             try:
                 website = self.env['website'].get_current_website()
                 pricelist = self.env.context.get('pricelist') or (website.get_current_pricelist() if website else False)
             except:
                 pricelist = False
 
-            # Compute prices for available variants
-            prices = []
-            for variant in available_variants:
-                # Get the price from pricelist or calculate variant price
-                if pricelist:
-                    try:
-                        price = pricelist._get_product_price(variant, 1.0)
-                    except:
-                        # Fallback: use variant.list_price if set, otherwise calculate
-                        price = variant.list_price if variant.list_price != self.list_price else (self.list_price + variant.price_extra)
+        # Compute prices for available variants
+        prices = []
+        for variant in available_variants:
+            # Get the price from pricelist or calculate variant price
+            if pricelist:
+                try:
+                    price = pricelist._get_product_price(variant, 1.0)
+                except:
+                    # Fallback: use variant.list_price if set, otherwise calculate
+                    price = variant.list_price if variant.list_price != self.list_price else (self.list_price + variant.price_extra)
+            else:
+                # Use variant.list_price if it's different from template (includes extra_price)
+                # Otherwise calculate: template price + variant extra_price
+                if variant.list_price and variant.list_price != self.list_price:
+                    price = variant.list_price
                 else:
-                    # Use variant.list_price if it's different from template (includes extra_price)
-                    # Otherwise calculate: template price + variant extra_price
-                    if variant.list_price and variant.list_price != self.list_price:
-                        price = variant.list_price
-                    else:
-                        price = self.list_price + variant.price_extra
+                    price = self.list_price + variant.price_extra
 
-                if price and price > 0:
-                    prices.append(price)
+            if price and price > 0:
+                prices.append(price)
 
-            if prices:
-                min_price = min(prices)
-                # Return only the cheapest price (min_price for both min and max)
-                return (min_price, min_price)
+        if prices:
+            return min(prices)
+        
+        return self.list_price
 
-        # Fall back to parent method if no available variants
-        if hasattr(super(ProductTemplate, self), '_get_website_price_range'):
-            result = super(ProductTemplate, self)._get_website_price_range()
-            # If parent returns a range, return only the minimum
-            if isinstance(result, tuple) and len(result) == 2:
-                return (result[0], result[0])  # Return min price for both
-            return result
-        else:
-            # If parent method doesn't exist, return template price as fallback
-            return (self.list_price, self.list_price)
+    def _get_website_price_range(self):
+        """Override to only consider active variants and return cheapest price."""
+        cheapest_price = self._get_cheapest_variant_price()
+        # Return only the cheapest price (same for both min and max)
+        return (cheapest_price, cheapest_price)
+    
+    def _get_website_price(self, pricelist=None):
+        """Override to return cheapest variant price instead of template price."""
+        return self._get_cheapest_variant_price(pricelist=pricelist)
 
     @api.model
     def _cron_archive_inactive_variants(self):
