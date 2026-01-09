@@ -28,21 +28,6 @@
         </field>
     </record>
 
-    <!-- Product Template Form View - Show inherited sale dates -->
-    <record id="product_template_form_view_inherit" model="ir.ui.view">
-        <field name="name">product.template.form.inherit.sale.dates</field>
-        <field name="model">product.template</field>
-        <field name="inherit_id" ref="product.product_template_form_view"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='categ_id']" position="after">
-                <field name="sale_start_date" optional="hide" readonly="1"/>
-                <field name="sale_end_date" optional="hide" readonly="1"/>
-                <field name="is_sale_period_active" optional="hide" readonly="1"/>
-                <field name="sale_period_info" optional="hide" readonly="1"/>
-            </xpath>
-        </field>
-    </record>
-
     <!-- Product Product Form View - Show inherited sale dates -->
     <record id="product_product_form_view_inherit" model="ir.ui.view">
         <field name="name">product.product.form.inherit.sale.dates</field>
@@ -83,11 +68,6 @@
                 <field name="sale_end_date"/>
                 <field name="is_sale_period_active"/>
             </xpath>
-            <xpath expr="//filter[@name='inactive']" position="after">
-                <separator/>
-                <filter string="Sale Period Active" name="sale_period_active" domain="[('is_sale_period_active', '=', True)]"/>
-                <filter string="Sale Period Expired" name="sale_period_expired" domain="[('is_sale_period_active', '=', False)]"/>
-            </xpath>
         </field>
     </record>
 
@@ -101,27 +81,7 @@
                 <field name="sale_end_date"/>
                 <field name="is_sale_period_active"/>
             </xpath>
-            <xpath expr="//filter[@name='favorites']" position="after">
-                <separator/>
-                <filter string="Sale Period Active" name="sale_period_active" domain="[('is_sale_period_active', '=', True)]"/>
-                <filter string="Sale Period Expired" name="sale_period_expired" domain="[('is_sale_period_active', '=', False)]"/>
-            </xpath>
         </field>
     </record>
 
-    <!-- Override website sale template to change "This combination does not exist" message -->
-    <!-- Note: This view inheritance is commented out as the target element no longer exists in Odoo 19 -->
-    <!-- If needed, update the XPath to match the new Odoo 19 structure -->
-    <!--
-    <record id="website_sale_product_template_inherit" model="ir.ui.view">
-        <field name="name">website.sale.product.template.inherit.sale.dates</field>
-        <field name="model">ir.ui.view</field>
-        <field name="inherit_id" ref="website_sale.product"/>
-        <field name="arch" type="xml">
-            <xpath expr="//p[hasclass('css_not_available_msg') and hasclass('alert') and hasclass('alert-warning')]" position="replace">
-                <p t-if="True" class="css_not_available_msg alert alert-warning">This variation is not currently available</p>
-            </xpath>
-        </field>
-    </record>
-    -->
 </odoo>
