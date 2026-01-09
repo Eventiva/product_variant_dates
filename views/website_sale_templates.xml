@@ -5,7 +5,7 @@
         <!-- Override the product_price section to ensure only cheapest price is displayed -->
         <!-- The backend _get_website_price_range returns (min_price, min_price)
              which ensures template_price_vals contains only the cheapest available price -->
-        <xpath expr="//div[@class='product_price' and @aria-label='Price information']" position="replace">
+        <xpath expr="//div[hasclass('product_price')]" position="replace">
             <div class="product_price" aria-label="Price information">
                 <span class="mb-0 fw-bold" aria-label="Sale price"
                     t-if="template_price_vals['price_reduce'] or not website.prevent_zero_price_sale"
