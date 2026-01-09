@@ -174,6 +174,65 @@ class ProductTemplate(models.Model):
 
         return info
 
+    def _get_active_sale_period_variants(self):
+        """Get variants that have active sale periods."""
+        self.ensure_one()
+        # Get variants with active sale periods
+        active_variants = self.product_variant_ids.filtered(
+            lambda v: v.is_sale_period_active and v.active
+        )
+        # If no variants have sale dates set, return all active variants
+        if not active_variants:
+            variants_with_dates = self.product_variant_ids.filtered(
+                lambda v: v.sale_start_date or v.sale_end_date
+            )
+            # If some variants have dates but none are active, return empty
+            # If no variants have dates, return all active variants
+            if not variants_with_dates:
+                active_variants = self.product_variant_ids.filtered(lambda v: v.active)
+        return active_variants
+
+    def _get_website_price_range(self):
+        """Override to only consider variants with active sale periods."""
+        # Get active variants only
+        active_variants = self._get_active_sale_period_variants()
+        
+        # If we have active variants, compute price from them only
+        if active_variants:
+            # Get pricelist from context or website
+            try:
+                website = self.env['website'].get_current_website()
+                pricelist = self.env.context.get('pricelist') or (website.get_current_pricelist() if website else False)
+            except:
+                pricelist = False
+            
+            # Compute prices for active variants
+            prices = []
+            for variant in active_variants:
+                # Get the price from pricelist or use list_price
+                if pricelist:
+                    try:
+                        price = pricelist._get_product_price(variant, 1.0)
+                    except:
+                        price = variant.list_price
+                else:
+                    price = variant.list_price
+                
+                if price:
+                    prices.append(price)
+            
+            if prices:
+                min_price = min(prices)
+                max_price = max(prices)
+                return (min_price, max_price)
+        
+        # Fall back to parent method if no active variants
+        if hasattr(super(ProductTemplate, self), '_get_website_price_range'):
+            return super(ProductTemplate, self)._get_website_price_range()
+        else:
+            # If parent method doesn't exist, return template price as fallback
+            return (self.list_price, self.list_price)
+
     @api.model
     def _cron_archive_inactive_variants(self):
         """Cron job to archive variants with inactive sale periods and reactivate those with active periods."""
