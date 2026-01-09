@@ -199,6 +199,9 @@ class ProductTemplate(models.Model):
 
         if not available_variants:
             return self.list_price
+        
+        # Debug: log available variants
+        _logger.debug(f"Template {self.id} ({self.name}): Found {len(available_variants)} active variants")
 
         # Get pricelist if not provided
         if not pricelist:
@@ -217,17 +220,23 @@ class ProductTemplate(models.Model):
                     price = pricelist._get_product_price(variant, 1.0)
                 except:
                     # Fallback: use variant.list_price if set, otherwise calculate
-                    price = variant.list_price if variant.list_price != self.list_price else (self.list_price + variant.price_extra)
+                    if variant.list_price and variant.list_price != self.list_price:
+                        price = variant.list_price
+                    else:
+                        # Calculate: template price + variant extra_price
+                        price = self.list_price + variant.price_extra
             else:
                 # Use variant.list_price if it's different from template (includes extra_price)
                 # Otherwise calculate: template price + variant extra_price
                 if variant.list_price and variant.list_price != self.list_price:
                     price = variant.list_price
                 else:
+                    # Calculate: template price + variant extra_price
                     price = self.list_price + variant.price_extra
 
             if price and price > 0:
                 prices.append(price)
+                _logger.debug(f"Variant {variant.id}: list_price={variant.list_price}, price_extra={variant.price_extra}, calculated_price={price}")
 
         if prices:
             return min(prices)
