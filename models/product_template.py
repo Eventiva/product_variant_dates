@@ -277,7 +277,7 @@ class ProductTemplate(models.Model):
         available_variants = self.product_variant_ids.filtered(lambda v: v.active)
         cheapest_variant = None
         cheapest_variant_price = float('inf')
-        
+
         if available_variants:
             for variant in available_variants:
                 if pricelist:
@@ -293,7 +293,7 @@ class ProductTemplate(models.Model):
                         price = variant.list_price
                     else:
                         price = self.list_price + variant.price_extra
-                
+
                 if price and price > 0 and price < cheapest_variant_price:
                     cheapest_variant_price = price
                     cheapest_variant = variant
