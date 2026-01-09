@@ -246,12 +246,23 @@ class ProductTemplate(models.Model):
     def _get_website_price_range(self):
         """Override to only consider active variants and return cheapest price."""
         cheapest_price = self._get_cheapest_variant_price()
+        _logger.info(f"Template {self.id} ({self.name}): _get_website_price_range returning ({cheapest_price}, {cheapest_price})")
         # Return only the cheapest price (same for both min and max)
         return (cheapest_price, cheapest_price)
-
+    
     def _get_website_price(self, pricelist=None):
         """Override to return cheapest variant price instead of template price."""
-        return self._get_cheapest_variant_price(pricelist=pricelist)
+        cheapest_price = self._get_cheapest_variant_price(pricelist=pricelist)
+        _logger.info(f"Template {self.id} ({self.name}): _get_website_price returning {cheapest_price}")
+        return cheapest_price
+    
+    @api.depends('list_price', 'product_variant_ids.list_price', 'product_variant_ids.price_extra')
+    def _compute_website_price(self):
+        """Override to compute website price as cheapest variant price."""
+        for template in self:
+            cheapest_price = template._get_cheapest_variant_price()
+            # Store in a field if needed, or this can be used by other methods
+            _logger.info(f"Template {template.id} ({template.name}): _compute_website_price computed {cheapest_price}")
 
     @api.model
     def _cron_archive_inactive_variants(self):
