@@ -2,17 +2,21 @@
 <odoo>
     <!-- Override products_item template to show only cheapest price from available variants -->
     <template id="products_item" inherit_id="website_sale.products_item">
-        <!-- Ensure only the minimum price is displayed (no price range) -->
+        <!-- Override the product_price section to ensure only cheapest price is displayed -->
         <!-- The backend _get_website_price_range returns (min_price, min_price) 
-             so the template will show a single price, but we ensure it's explicit -->
-        <xpath expr="//div[hasclass('product_price')]" position="attributes">
-            <attribute name="t-attf-class">product_price d-flex justify-content-between align-items-center flex-wrap</attribute>
-        </xpath>
-        
-        <!-- Hide any max price display if it exists (when min != max in template_price_vals) -->
-        <!-- The backend ensures min == max, but this provides additional safety -->
-        <xpath expr="//span[hasclass('oe_price') and contains(@t-out, 'template_price_vals')]" position="attributes">
-            <attribute name="t-if">template_price_vals and template_price_vals.get('price_reduce')</attribute>
+             which ensures template_price_vals contains only the cheapest available price -->
+        <xpath expr="//div[@class='product_price' and @aria-label='Price information']" position="replace">
+            <div class="product_price" aria-label="Price information">
+                <span class="mb-0 fw-bold" aria-label="Sale price" 
+                      t-if="template_price_vals['price_reduce'] or not website.prevent_zero_price_sale" 
+                      t-out="template_price_vals['price_reduce']" 
+                      t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+                <t t-if="'base_price' in template_price_vals and (template_price_vals['base_price'] &gt; template_price_vals['price_reduce']) and (template_price_vals['price_reduce'] or not website.prevent_zero_price_sale)" name="product_base_price">
+                    <del aria-label="Original price" t-attf-class="text-muted me-1 mb-0" style="white-space: nowrap;">
+                        <small t-esc="template_price_vals['base_price']" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+                    </del>
+                </t>
+            </div>
         </xpath>
     </template>
 </odoo>
