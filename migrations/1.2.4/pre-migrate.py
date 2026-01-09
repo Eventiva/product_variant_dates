@@ -7,19 +7,19 @@ def migrate(cr, version):
     """
     # Delete the orphaned module record if it exists
     cr.execute("""
-        DELETE FROM ir_module_module 
+        DELETE FROM ir_module_module
         WHERE name = 'product_variant_dates_display_price'
     """)
-    
+
     # Also remove any module dependencies referencing it
     cr.execute("""
-        DELETE FROM ir_module_module_dependency 
+        DELETE FROM ir_module_module_dependency
         WHERE name = 'product_variant_dates_display_price'
     """)
-    
+
     # Remove any external IDs that might reference it
     cr.execute("""
-        DELETE FROM ir_model_data 
+        DELETE FROM ir_model_data
         WHERE module = 'product_variant_dates_display_price'
     """)
 
