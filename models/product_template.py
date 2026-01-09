@@ -199,7 +199,7 @@ class ProductTemplate(models.Model):
 
         if not available_variants:
             return self.list_price
-        
+
         # Debug: log available variants
         _logger.debug(f"Template {self.id} ({self.name}): Found {len(available_variants)} active variants")
 
@@ -240,7 +240,7 @@ class ProductTemplate(models.Model):
 
         if prices:
             return min(prices)
-        
+
         return self.list_price
 
     def _get_website_price_range(self):
@@ -248,7 +248,7 @@ class ProductTemplate(models.Model):
         cheapest_price = self._get_cheapest_variant_price()
         # Return only the cheapest price (same for both min and max)
         return (cheapest_price, cheapest_price)
-    
+
     def _get_website_price(self, pricelist=None):
         """Override to return cheapest variant price instead of template price."""
         return self._get_cheapest_variant_price(pricelist=pricelist)
