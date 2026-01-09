@@ -218,25 +218,29 @@ class ProductTemplate(models.Model):
             if pricelist:
                 try:
                     price = pricelist._get_product_price(variant, 1.0)
-                except:
+                    _logger.info(f"Template {self.id}: Variant {variant.id} price from pricelist: {price}")
+                except Exception as e:
                     # Fallback: use variant.list_price if set, otherwise calculate
                     if variant.list_price and variant.list_price != self.list_price:
                         price = variant.list_price
                     else:
                         # Calculate: template price + variant extra_price
                         price = self.list_price + variant.price_extra
+                    _logger.info(f"Template {self.id}: Variant {variant.id} price (fallback): {price}, list_price={variant.list_price}, price_extra={variant.price_extra}, template.list_price={self.list_price}")
             else:
                 # Use variant.list_price if it's different from template (includes extra_price)
                 # Otherwise calculate: template price + variant extra_price
                 if variant.list_price and variant.list_price != self.list_price:
                     price = variant.list_price
+                    _logger.info(f"Template {self.id}: Variant {variant.id} using list_price: {price}")
                 else:
                     # Calculate: template price + variant extra_price
                     price = self.list_price + variant.price_extra
+                    _logger.info(f"Template {self.id}: Variant {variant.id} calculated price: {price} = {self.list_price} + {variant.price_extra}")
 
             if price and price > 0:
                 prices.append(price)
-                _logger.debug(f"Variant {variant.id}: list_price={variant.list_price}, price_extra={variant.price_extra}, calculated_price={price}")
+                _logger.info(f"Template {self.id}: Added variant {variant.id} price {price} to prices list")
 
         if prices:
             return min(prices)
