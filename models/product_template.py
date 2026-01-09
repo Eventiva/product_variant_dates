@@ -196,7 +196,7 @@ class ProductTemplate(models.Model):
         """Override to only consider variants with active sale periods."""
         # Get active variants only
         active_variants = self._get_active_sale_period_variants()
-        
+
         # If we have active variants, compute price from them only
         if active_variants:
             # Get pricelist from context or website
@@ -205,7 +205,7 @@ class ProductTemplate(models.Model):
                 pricelist = self.env.context.get('pricelist') or (website.get_current_pricelist() if website else False)
             except:
                 pricelist = False
-            
+
             # Compute prices for active variants
             prices = []
             for variant in active_variants:
@@ -217,15 +217,15 @@ class ProductTemplate(models.Model):
                         price = variant.list_price
                 else:
                     price = variant.list_price
-                
+
                 if price:
                     prices.append(price)
-            
+
             if prices:
                 min_price = min(prices)
                 max_price = max(prices)
                 return (min_price, max_price)
-        
+
         # Fall back to parent method if no active variants
         if hasattr(super(ProductTemplate, self), '_get_website_price_range'):
             return super(ProductTemplate, self)._get_website_price_range()
