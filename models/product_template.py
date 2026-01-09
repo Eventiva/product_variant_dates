@@ -193,24 +193,9 @@ class ProductTemplate(models.Model):
         return active_variants
 
     def _get_website_price_range(self):
-        """Override to only consider variants with active sale periods and return cheapest price."""
-        now = fields.Datetime.now()
-        
-        # Get variants that are currently within their sale period
-        available_variants = []
-        for variant in self.product_variant_ids:
-            if not variant.active:
-                continue
-            
-            # Check if variant is within its sale period
-            if variant.sale_start_date and variant.sale_start_date > now:
-                continue  # Sale hasn't started yet
-            if variant.sale_end_date and variant.sale_end_date < now:
-                continue  # Sale has ended
-            
-            # If variant has no sale dates, include it (always available)
-            # If variant has sale dates and we're within the period, include it
-            available_variants.append(variant)
+        """Override to only consider active variants and return cheapest price."""
+        # Get only active variants (archiving logic handles sale period dates)
+        available_variants = self.product_variant_ids.filtered(lambda v: v.active)
 
         # If we have available variants, compute price from them only
         if available_variants:
