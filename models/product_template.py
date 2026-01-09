@@ -209,16 +209,22 @@ class ProductTemplate(models.Model):
             # Compute prices for available variants
             prices = []
             for variant in available_variants:
-                # Get the price from pricelist or use list_price
+                # Get the price from pricelist or calculate variant price
                 if pricelist:
                     try:
                         price = pricelist._get_product_price(variant, 1.0)
                     except:
-                        price = variant.list_price
+                        # Fallback: use variant.list_price if set, otherwise calculate
+                        price = variant.list_price if variant.list_price != self.list_price else (self.list_price + variant.price_extra)
                 else:
-                    price = variant.list_price
+                    # Use variant.list_price if it's different from template (includes extra_price)
+                    # Otherwise calculate: template price + variant extra_price
+                    if variant.list_price and variant.list_price != self.list_price:
+                        price = variant.list_price
+                    else:
+                        price = self.list_price + variant.price_extra
 
-                if price:
+                if price and price > 0:
                     prices.append(price)
 
             if prices:
