@@ -167,8 +167,41 @@ class ProductProduct(models.Model):
                 self.with_context(skip_archiving=True).write({'active': False})
                 _logger.info(f"Archived variant {self.id} (sale period inactive)")
             elif self.is_sale_period_active and not self.active:
-                # Reactivate variant if sale period is active
-                self.with_context(skip_archiving=True).write({'active': True})
+                # Before reactivating, check if there's already an active variant with the same combination
+                # This prevents duplicate key constraint violations
+                # Get combination_indices for current variant using SQL to avoid ORM issues
+                self._cr.execute("""
+                    SELECT combination_indices 
+                    FROM product_product 
+                    WHERE id = %s
+                """, (self.id,))
+                current_combination = self._cr.fetchone()
+                
+                if current_combination and current_combination[0] is not None:
+                    # Check if any active variant has the same combination
+                    self._cr.execute("""
+                        SELECT id 
+                        FROM product_product 
+                        WHERE product_tmpl_id = %s 
+                        AND active = true 
+                        AND id != %s
+                        AND combination_indices = %s
+                        LIMIT 1
+                    """, (self.product_tmpl_id.id, self.id, current_combination[0]))
+                    duplicate = self._cr.fetchone()
+                    
+                    if duplicate:
+                        _logger.warning(f"Skipping reactivation of variant {self.id} - active variant {duplicate[0]} already exists with same combination")
+                        return
+                
+                # Reactivate variant if sale period is active and no duplicate exists
+                # Use SQL directly to avoid triggering variant creation logic
+                self._cr.execute("""
+                    UPDATE product_product 
+                    SET active = true 
+                    WHERE id = %s
+                """, (self.id,))
+                self.invalidate_recordset(['active'])
                 _logger.info(f"Reactivated variant {self.id} (sale period active)")
         except Exception as e:
             _logger.warning(f"Error updating variant {self.id} archiving: {e}")
@@ -206,9 +239,40 @@ class ProductProduct(models.Model):
                     archived_count += 1
                     _logger.info(f"Archived variant {variant.id} - {variant.display_name}")
                 elif variant.is_sale_period_active and not variant.active:
-                    variant.with_context(skip_archiving=True).write({'active': True})
-                    reactivated_count += 1
-                    _logger.info(f"Reactivated variant {variant.id} - {variant.display_name}")
+                    # Before reactivating, check if there's already an active variant with the same combination
+                    variant._cr.execute("""
+                        SELECT combination_indices 
+                        FROM product_product 
+                        WHERE id = %s
+                    """, (variant.id,))
+                    current_combination = variant._cr.fetchone()
+                    
+                    duplicate_exists = False
+                    if current_combination and current_combination[0] is not None:
+                        variant._cr.execute("""
+                            SELECT id 
+                            FROM product_product 
+                            WHERE product_tmpl_id = %s 
+                            AND active = true 
+                            AND id != %s
+                            AND combination_indices = %s
+                            LIMIT 1
+                        """, (variant.product_tmpl_id.id, variant.id, current_combination[0]))
+                        duplicate = variant._cr.fetchone()
+                        if duplicate:
+                            duplicate_exists = True
+                            _logger.warning(f"Skipping reactivation of variant {variant.id} - active variant {duplicate[0]} already exists with same combination")
+                    
+                    if not duplicate_exists:
+                        # Use SQL directly to avoid triggering variant creation logic
+                        variant._cr.execute("""
+                            UPDATE product_product 
+                            SET active = true 
+                            WHERE id = %s
+                        """, (variant.id,))
+                        variant.invalidate_recordset(['active'])
+                        reactivated_count += 1
+                        _logger.info(f"Reactivated variant {variant.id} - {variant.display_name}")
 
             except Exception as e:
                 _logger.warning(f"Error processing variant {variant.id}: {e}")
