@@ -253,18 +253,18 @@ class ProductTemplate(models.Model):
         _logger.info(f"Template {self.id} ({self.name}): _get_website_price_range returning ({cheapest_price}, {cheapest_price}), template.list_price={self.list_price}")
         # Return only the cheapest price (same for both min and max)
         return (cheapest_price, cheapest_price)
-    
+
     def _get_website_price(self, pricelist=None):
         """Override to return cheapest variant price instead of template price."""
         cheapest_price = self._get_cheapest_variant_price(pricelist=pricelist)
         _logger.info(f"Template {self.id} ({self.name}): _get_website_price returning {cheapest_price}, template.list_price={self.list_price}")
         return cheapest_price
-    
+
     def _get_template_price_vals(self, pricelist=None):
         """Override to return template_price_vals with cheapest variant price."""
         # Get cheapest variant price
         cheapest_price = self._get_cheapest_variant_price(pricelist=pricelist)
-        
+
         # Get pricelist if not provided
         if not pricelist:
             try:
@@ -272,22 +272,49 @@ class ProductTemplate(models.Model):
                 pricelist = self.env.context.get('pricelist') or (website.get_current_pricelist() if website else False)
             except:
                 pricelist = False
+
+        # Find the cheapest variant to get its base price
+        available_variants = self.product_variant_ids.filtered(lambda v: v.active)
+        cheapest_variant = None
+        cheapest_variant_price = float('inf')
         
-        # Compute base_price (list price) - use cheapest variant's list price or template price
-        if pricelist:
-            try:
-                base_price = pricelist._get_product_price(self, 1.0, uom_id=False)
-            except:
-                base_price = self.list_price
+        if available_variants:
+            for variant in available_variants:
+                if pricelist:
+                    try:
+                        price = pricelist._get_product_price(variant, 1.0)
+                    except Exception:
+                        if variant.list_price and variant.list_price != self.list_price:
+                            price = variant.list_price
+                        else:
+                            price = self.list_price + variant.price_extra
+                else:
+                    if variant.list_price and variant.list_price != self.list_price:
+                        price = variant.list_price
+                    else:
+                        price = self.list_price + variant.price_extra
+                
+                if price and price > 0 and price < cheapest_variant_price:
+                    cheapest_variant_price = price
+                    cheapest_variant = variant
+
+        # Compute base_price (list price) - use cheapest variant's list price (before discounts)
+        if cheapest_variant:
+            # Use variant's list_price if different from template, otherwise calculate from template + extra
+            if cheapest_variant.list_price and cheapest_variant.list_price != self.list_price:
+                base_price = cheapest_variant.list_price
+            else:
+                base_price = self.list_price + cheapest_variant.price_extra
         else:
+            # Fallback to template price if no variants found
             base_price = self.list_price
-        
+
         # Ensure base_price is at least cheapest_price (for discount display)
         if base_price < cheapest_price:
             base_price = cheapest_price
-        
+
         _logger.info(f"Template {self.id} ({self.name}): _get_template_price_vals returning price_reduce={cheapest_price}, base_price={base_price}")
-        
+
         return {
             'price_reduce': cheapest_price,
             'base_price': base_price,
