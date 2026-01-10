@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Product Variant Sale Dates',
-    'version': '1.3.0',
+    'version': '1.3.1',
     'category': 'Sales/Sales',
     'summary': 'Add start and end sale dates to product variants',
     'description': """

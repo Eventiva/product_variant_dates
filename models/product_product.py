@@ -113,6 +113,7 @@ class ProductProduct(models.Model):
 
     def _get_default_variant_ribbon(self):
         """Get or create a default ribbon based on variant sale period."""
+        self.ensure_one()  # Ensure we're working with a single record
         if self.sale_end_date:
             # Create a unique ribbon name for this variant
             variant_ribbon_name = f"{self.sale_period_info}"
@@ -134,20 +135,24 @@ class ProductProduct(models.Model):
             return ribbon
         return False
 
-    @api.model
-    def create(self, vals):
+    @api.model_create_multi
+    def create(self, vals_list):
         """Override create to set default ribbon."""
-        variant = super().create(vals)
-        if not variant.variant_ribbon_id:
-            variant.variant_ribbon_id = variant._get_default_variant_ribbon()
-        return variant
+        variants = super().create(vals_list)
+        # Set default ribbon for each variant individually
+        for variant in variants:
+            if not variant.variant_ribbon_id:
+                variant.variant_ribbon_id = variant._get_default_variant_ribbon()
+        return variants
 
     def write(self, vals):
         """Override write to update ribbon when sale dates change."""
         result = super().write(vals)
         # Update ribbon if sale dates changed and no manual ribbon is set
-        if not self.variant_ribbon_id and self.sale_end_date:
-            self.variant_ribbon_id = self._get_default_variant_ribbon()
+        # Iterate over recordset to handle multiple records
+        for variant in self:
+            if not variant.variant_ribbon_id and variant.sale_end_date:
+                variant.variant_ribbon_id = variant._get_default_variant_ribbon()
         return result
 
     def update_variant_ribbons(self):
